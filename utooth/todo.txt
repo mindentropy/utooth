@@ -1,0 +1,146 @@
+===TODO===
+
+1) Figure out how to handle a complete Rx buffer. --> Done.
+
+In the ISR check for the size requested. If the receive buffer 
+hits the size requested then call the hci_rx_pkt_handler(); --> Done.
+
+Implementation of event handling.
+--------------------------------
+Request first for the event header and disable Rx. --> Done.
+Check the type of the reply. --> Done.
+If the reply is an event then read the size of the payload and disable Rx. --> Done.
+
+Read the Rx payload and disable Rx. Repeat the process again for other commands.--> Done.
+
+2) Modify hci_rx_pkt_handler(); to handle the event commands.--> Done.
+
+
+3)**IMP** Handle CTS pin pulled high when the transfer is happening to the CC256x. 
+The sender should stop sending and then restart when there is another transition to
+low. **IMP**  --> No need to handle CTS at this point after tests confirming CC256x
+being fast with good buffers. --> Pending --> To stress test to get CTS signal
+VS code to change the UART bandwidth can be used to get higher bandwidth and
+overflow the internal buffers. --> Done!
+
+4) Test out simple commands such as buffer reading, BD addr reading. Change some
+system parameters such as master clk from 16 to 25Mhz to test the overall stability 
+of the system. --> Done!
+
+5) Plan on how to build a complete system by thinking on how to integrate other
+infrastructure. Sketch out the architecture. **Divide into smaller steps.
+
+6) Read further through the documentation to understand details of packets and
+detail out the communication. **Divide into smaller steps.
+
+Optimization:
+=============
+Using cq_discard and cq_peek implement a zero copy by just peeking at the queue rather
+than allocating any variables for length.
+
+
+7) Module building.
+===================
+
+**HIGH PRIORITY**)Handle different inquiry results in a container. Setup a connection manager
+which has bdaddr's which are connected and not connected. A new inquiry
+should remove the bdaddr's from the container and restart the connections afresh.
+
+
+***HIGH PRIORITY***
+a) HCI module
+-------------
+b) L2CAP
+
+a) HCI module 
+	-> Link control commands --> 
+	-> Link policy commands -->
+	-> Baseband module --> Almost done!
+	-> Information parameters --> Done!
+	-> Status parameters --> Low priority
+	-> Testing commands --> Low priority
+	-> Events. --> As and when needed.
+
+b) L2CAP module
+---------------
+*)Parsing of ACL data headers --> Done!
+*)L2CAP ping request and response and L2CAP parsing of data --> Done!!!
+
+---------------------------------------------------------------------------------------------------------------
+*)Length mismatch should be checked as to whether its related to segmentation and reassembly. --> HIGH PRIORITY --> Done.
+*)Modify code to handle the header size efficiently rather than step wise jumps from length etc. --> Done.
+
+Detection of fragmented l2cap packet. Check if the l2cap pkt len is different from acl pkt len. Indicates fragmentation. -->Done.
+Detect if the packet boundary flags are 10 and then 01 which indicates the packet continuation. --> Done.
+
+Modify process_l2cap_pkt to handle fragmentation. Fragmentation buffer handling --> HIGH PRIORITY. -->Done.
+
+*)Should the code peek the l2cap length and channel id to determine if the message is a fragment? --> Done.
+Presently set the L2CAP buffer to 741 bytes a DH5 pkt. Need to read more on the pkt types.
+
+*) Create/handle a L2CAP connection request from a peer. --> HIGH PRIORITY --> !!!!IMP!!!! --> Done. -->Interface changes
+        --> MODIFICATIONS PENDING -->
+*) Add support to the L2CAP signaling commands. --> HIGH PRIORITY --> !!!!IMP!!!! 
+*) Send configuration request for MTU handling. Negotiation of connection pending. --> Done. Pending
+configuration requests are retransmission and flow control and QoS option which are not supported.
+
+c) RFCOMM module.
+----------------
+
+*) Understanding of RFCOMM standards. --> Done.
+*) Setting up RFCOMM testing in host and dev.	--> Done.
+*) Sending test strings to decode the RFCOMM packets in the device. *HOST* ------RFCOMM------>*DEVICE* --> Done.
+*) Sending test string to encode the RFCOMM packets from device to host.  *DEVICE* -----RFCOMM---->*HOST* --> Done.
+
+d) RFCOMM msg handling module.
+-----------------------------
+*) Msg handling reply and response functions. 
+
+---->**IMP**<----
+	Figure how to sustain a data stream for rfcomm. FAILURE in request response messages. -->Fixed. --> Done.
+---->**IMP**<----
+
+
+*) Configuration negotiation of packets. --> Done.
+*) Creating modules in rfcomm to handle packets and send appropriate responses for the messages.
+   |
+   |
+   +----> Formal message creation functions have to be written.
+
+API
+---
+***HIGH PRIORITY***
+Connect the l2cap layer to the hci layer to handle the whole flow for different functionalities.
+                                              |
+                                              |
+                                              |
+                                              |
+                                              v
+
+				Development of API's and data structures to handle this flow.
+
+
+Buffer types:
+-------------
+If a simple buffer filling is used I can simply modify the data inline in the buffer itself. This 
+is seen in l2cap module buffer.
+In case of a circular queue the buffer handling can be done directly on the circular queue and enable the
+transfer of data once the queue is set. Functions and macros for inline modification of the circular
+queue is already present. This can be done for hci buffers.
+
+---------------------------------------------------------------------------------------------------------------
+
+*)Connection manager to handle connections and book keeping (High Priority!!!)
+
+
+	Main modules:
+	------------
+	Segmentation and reassembly.
+	Retransmission and flow control.
+	Encapsulation and scheduling.
+
+Requirement of timer is needed for hci and l2cap timeouts? Use 32kHz timer.
+-> Interrupt handler created with interrupts.--> Handlers for timeouts pending.
+
+Modify the circular queue to discard byte chunks. **High Priority** --> Done. Testing Pending.
+Peek function in the circular queue **High Priority** --> Done. Testing Pending.

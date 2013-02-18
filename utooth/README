@@ -1,0 +1,312 @@
+
+How to handle a complete event buffer.
+======================================
+
+In the ISR check for the size requested. If the receive buffer
+hits the size requested then call the hci_cmd_event_handler();
+
+Implementation of event handling.
+--------------------------------
+
+Request first for the event header and disable Rx.
+Check the type of the reply.
+If the reply is an event then read the size of the payload and disable Rx.
+
+Read the Rx payload and disable Rx. Repeat the process again for other commands.
+
+Handling Event payload
+----------------------
+After a command is sent the event is handled in the ISR. 
+
+Methods to handle return value:
+==============================
+To check for the return value the handler can update a common return value. 
+In the main program it can check the status of the value.
+
+Implementation of block reading.
+--------------------------------
+Provide the size of the read. If the circular queue "used size" equals the size of the block, raise
+the RTS pin to signal the BT module to stop sending data. Process the data and lower the RTS
+pin/enable interrupts to receive the next block of data.
+Using the above technique I can read a complete opcode block, the length or a complete payload
+block.
+
+A block read should have intial state to PACKET_TYPE and the readblksize == 1. It should
+be possible to queue the commands in the Tx queue. In the Rx ISR the event handler should go through
+PACKET_TYPE,EVENT_CODE,PARAMETER_LEN and PAYLOAD phases. After the completition of PAYLOAD phase
+the ISR SHOULD reset the state back to PACKET_TYPE and readblksize SHOULD be set to 1.
+
+NOTES on HCI OPCODE
+===================
+
+TI MSP430 is little endian. Hence 
+
+Eg:
+--
+uint16_t num = 0xff0f;  // 0xff MSB and 0x0f LSB
+uint8_t *ch = &num;
+printf("%u %u",*(ch),*(ch+1));
+
+Output:
+------
+0x0f and 0xff.
+Lower byte or the LSB is stored in lower part of the memory
+and the upper byte or the MSB is stored in the higher part of the memory.
+
+OPCODE == OCF + OGF
+OCF == 10 bits.
+OGF == 6 bits.
+
+In case of HCI OPCODE the opcode is in big endian format.
+Hence OCF is LSB and OGF is MSB.
+To make the OCF LSB in little endian format or it to opcode without shift.
+To make the OGF MSB in little endian format shift it by 10 bits(the width of OCF).
+i.e. OPCODE = (OGF << 10) | OCF;
+
+To represent in the char buffer format set LSB(OCF) in ch[0] and MSB(OGF) in ch[1].
+
+
+Regarding HCI Packet handling
+-----------------------------
+Got some success with HCI communication today. I understood the opcode and 
+the problem was with big endian / little endian but we have to consider the 
+OCF and OGF as one single entity.
+  Regarding the HCI event packet value when I showed the hex values the UART 
+was sending it wrongly. There were some characters missing. This was caused 
+because I had set very low baud rate of 9600 and was using TI's HAL instead 
+of my own circular buffer one. The TI one does not have Tx buffer. Hence it 
+was getting stuck until the character was sent. I changed to a high baud rate. 
+Later I will replace it with my implementation.
+
+Reset Command:
+01(cmd packet type) 03 0c(opcode) 00(parameter total length)
+					|										|
+					\ --------------------------------------/
+										|
+										|
+									    v 
+							   Header len == 3
+
+   Regarding the local version information the return values are:
+04 0e 0c 01 01 10 00 06 00 00 06 0d 00 0f 1b
+
+Regarding reset command return value:
+04(packet type) 0e(cmd complete event) 04(param total length) 
+			01(num of hci cmd pkts) 03 0c(opcode) 00(return status)
+
+
+Decoding:
+--------
+04 -> Event packet code.
+0E -> Command complete event.
+0C -> Length of the packets. (12)
+01 -> Num of HCI packets that can be sent from the host to controller.
+	(Indicated by the controller to the host).
+01 10 -> opcode sent to the controller.
+00 -> status. (Success)
+06 -> HCI version. (Bluetooth ver 4.0)
+00 00 -> HCI rev.
+06 -> LMP version. (Bluetooth ver 4.0)
+0d 00 -> Manufacturer name (0d represent TI in Bluetooth assigned numbers site)
+0f 1b -> LMP subversion.
+
+
+Note on HAL CTS/RTS Handshaking.
+===============================
+
+MSP430            BT CC256x
+------			  ---------
+RTS(P1.4) --------> CTS
+CTS(P1.3) <-------- RTS
+
+
+When the CC256x is ready to accept data the RTS of CC256x is set to low. 
+When the UART Rx buffer of the CC256x crosses the threshold it sets the 
+RTS high. This is the signal for the MSP430 to stop sending data. NOTE that
+the RTS pin will be pulled low by the CC256x when it boots up.
+
+When the MSP430 needs to receive data it sets the RTS pin low. The CC256x
+will send data until the RTS pin goes high again. When it goes high CC256x 
+will stop sending data and will wait until the RTS pin goes low again.
+
+Note on L2CAP connection handling.
+==================================
+Connection request:
+-------------------
+When a connection is requested the channel id is generated and set in the 
+structure. This should become the source cid(scid). The connection is 
+requested for a particular destination bdaddr. Hence the l2cap_conn is taken
+from a pool. 
+	
+ +-------------+                  +-------------+
+ |        scid1|----------------->|dcid1        |
+ |             |                  |             |
+ |             |                  |             |
+ |        scid2|----------------->|dcid2        |
+ +-------------+                  +-------------+
+
+a) Request for a connection. Channel id is generated for that particular connection.
+b) If another connection is requested for the same bdaddr another l2cap_conn is 
+requested from the pool and a different channel id is generated to identify 
+the end point.
+
+
+NOTE:
+----
+Connection handle is used to represent the connection between 2 devices. A single
+connection handle can have multiple channel ids at the source representing different
+channel endpoints.
+
+
+Configuration request:
+----------------------
+When all configuration options cannot fit into a Configuration Request with
+length that does not exceed the receiver's MTUsig, the options shall be
+passed in multiple configuration command packets. If all options fit into the
+receiver's MTUsig, then they shall be sent in a single configuration request
+with the continuation flag set to zero. 
+
+
+Racecondition analysis in circular queue.
+=========================================
+Consider the scenario where the buffsize == 5.
+
+Consider where start == 1 and end == 2, currentfreesize == 3
+
+Now a call to cq_add() happens.
+An element is added. end == 3.
+An interrupt happens when currentfreesize is about to be incremented.
+cq_del is called.
+is(currentfreesize == 4) --> No.
+start == 2 end == 3 currentfreesize = 4
+return from interrupt.
+
+Interrupt happens again.
+is(currentfreesize == 4) --> Yes.
+Queue is empty.
+return.
+
+in cq_add currentfreesize is decremented
+Now currentfreesize == 3
+enable interrupt.
+
+interrupt happens.
+
+is(currentfreesize == 4) --> No.
+delete element.
+currentfreesize == 4.
+
+
+Scenario 1:
+----------
+Multiple interrupts happen when in cq_add(). cq_del() is called in the interrupt
+handler. Hence interrupts are disabled in the ISR.
+
+tmptxcount == sizeof(script); Correct and verified. cq_add() called == sizeof(script).
+
+Inconsistency in tmprxcount. If inconsistency in tmprxcount then curfreesize should
+be inconsistent.
+
+Even if interrupts happen without giving chance to cq_add() then it curfreesize should tend
+to MODSIZE and Q should tend to empty.
+
+Analysis on curfreesize only as curfreesize does not depend on start and end but only
+on Tx and Rx of bytes for queue.
+
+=======
+
+
+Racecondition analysis in circular queue.
+=========================================
+Consider the scenario where the buffsize == 5.
+
+Consider where start == 1 and end == 2, currentfreesize == 3
+
+Now a call to cq_add() happens.
+An element is added. end == 3.
+An interrupt happens when currentfreesize is about to be incremented.
+cq_del is called.
+is(currentfreesize == 4) --> No.
+start == 2 end == 3 currentfreesize = 4
+return from interrupt.
+
+Interrupt happens again.
+is(currentfreesize == 4) --> Yes.
+Queue is empty.
+return.
+
+in cq_add currentfreesize is decremented
+Now currentfreesize == 3
+enable interrupt.
+
+interrupt happens.
+
+is(currentfreesize == 4) --> No.
+delete element.
+currentfreesize == 4.
+
+
+Scenario 1:
+----------
+Multiple interrupts happen when in cq_add(). cq_del() is called in the interrupt
+handler. Hence interrupts are disabled in the ISR.
+
+tmptxcount == sizeof(script); Correct and verified. cq_add() called == sizeof(script).
+
+Inconsistency in tmprxcount. If inconsistency in tmprxcount then curfreesize should
+be inconsistent.
+
+Even if interrupts happen without giving chance to cq_add() then it curfreesize should tend
+to MODSIZE and Q should tend to empty.
+
+Analysis on curfreesize only as curfreesize does not depend on start and end but only
+on Tx and Rx of bytes for queue.
+
+=======
+
+
+Racecondition in circular queue.
+===============================
+Consider the scenario where the buffsize == 5.
+
+Consider where start == 1 and end == 2, currentfreesize == 3
+
+Now a call to cq_add() happens.
+An element is added. end == 3.
+An interrupt happens when currentfreesize is about to be incremented.
+cq_del is called.
+is(currentfreesize == 4) --> No.
+start == 2 end == 3 currentfreesize = 4
+return from interrupt.
+
+Interrupt happens again.
+is(currentfreesize == 4) --> Yes.
+Queue is empty.
+return.
+
+in cq_add currentfreesize is decremented
+Now currentfreesize == 3
+enable interrupt.
+
+interrupt happens.
+
+is(currentfreesize == 4) --> No.
+delete element.
+currentfreesize == 4.
+
+
+Testing of RFCOMM stack.
+========================
+1) sudo rfcomm bind hciX <PAN module bdaddr>
+2) sudo rfcomm connect hciX
+3) sudo chown <username> /dev/rfcommX
+4) Open cutecom and point to /dev/rfcommX
+5) Hit open and type. The characters should appear in the MSP430
+   log window.
+
+Packet generator test.
+=====================
+Use "rctest" with necessary parameters for RFCOMM testing.
+
+TODO: Examples and documentation.
+ 
