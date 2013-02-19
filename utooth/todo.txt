@@ -144,3 +144,5 @@ Requirement of timer is needed for hci and l2cap timeouts? Use 32kHz timer.
 
 Modify the circular queue to discard byte chunks. **High Priority** --> Done. Testing Pending.
 Peek function in the circular queue **High Priority** --> Done. Testing Pending.
+
+Documentation of functions pending.
