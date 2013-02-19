@@ -6,6 +6,7 @@
 #include "hal_buttons.h"
 #include "hal_usb.h"
 #include "hal_dbg.h"
+#include "hal_led.h"
 //#include "hal_lcd.h"
 #include "hci.h"
 #include "cq.h"

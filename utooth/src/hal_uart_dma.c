@@ -3,6 +3,7 @@
 #include "hal_usb.h"
 #include "cq.h"
 #include "hci.h"
+#include "hal_led.h"
 
 #include <stdio.h>
 #include <string.h>
