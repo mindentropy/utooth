@@ -119,6 +119,9 @@ Connect the l2cap layer to the hci layer to handle the whole flow for different 
 
 				Development of API's and data structures to handle this flow.
 
+!!!HIGH PRIORITY!!!
+*) Initiate a rfcomm connection from the device to the pc host. 
+*) Create various packet formats for the same.
 
 Buffer types:
 -------------
