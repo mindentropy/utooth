@@ -337,8 +337,8 @@ process_l2cap_pkt(uint16_t conn_handle,
 					//Check for the configuration options set. Based on this build the configuration response.
 					if((conn->l2cap_info).conf_opt.option_bits & MTU_OPTION_BIT) {
 						if((conn->l2cap_info).conf_opt.mtu != L2CAP_PAYLOAD_MTU) {
-							set_l2cap_signal_cmd_conf_resp_result(l2cap_pkt_buff
-											,FAILURE_UNACCEPTABLE_PARAMETERS);
+							set_l2cap_signal_cmd_conf_resp_result(l2cap_pkt_buff,
+											FAILURE_UNACCEPTABLE_PARAMETERS);
 							set_l2cap_signal_mtu_option(tmp,L2CAP_PAYLOAD_MTU); //Set the acceptable parameter.
 							tmp += TOTAL_OPTION_LEN(MTU_OPTION_LEN); //Increase the offset by the total option len.
 							cmd_len += TOTAL_OPTION_LEN(MTU_OPTION_LEN);
@@ -346,8 +346,8 @@ process_l2cap_pkt(uint16_t conn_handle,
 
 						if((conn->l2cap_info).conf_opt.option_bits & FLUSH_TIMEOUT_OPTION_BIT) {
 							if((conn->l2cap_info).conf_opt.flush_timeout != L2CAP_FLUSH_TIMEOUT) {
-								set_l2cap_signal_cmd_conf_resp_result(l2cap_pkt_buff
-												,FAILURE_UNACCEPTABLE_PARAMETERS);
+								set_l2cap_signal_cmd_conf_resp_result(l2cap_pkt_buff,
+												FAILURE_UNACCEPTABLE_PARAMETERS);
 								set_l2cap_signal_flush_timeout_option(tmp,L2CAP_FLUSH_TIMEOUT); //Set the acceptable parameter.
 								tmp += TOTAL_OPTION_LEN(FLUSH_TIMEOUT_OPTION_LEN); //Increase the offset by the total option len.
 								cmd_len += TOTAL_OPTION_LEN(FLUSH_TIMEOUT_OPTION_LEN);
@@ -585,6 +585,15 @@ process_l2cap_pkt(uint16_t conn_handle,
 						case SABM:
 							halUsbSendStr("SABM\n");
 
+							/*
+							 *	The SABM command shall be used to place the addressed station 
+							 *	in the Asynchronous Balanced Mode (ABM) where all control fields 
+							 *	shall be one octet in length. The station shall confirm acceptance 
+							 *	of the SABM command by transmission of a UA response at the first 
+							 *	opportunity. Upon acceptance of this command, the DLC send and 
+							 *	receive state variables shall be set to zero.
+							 */
+
 							if(verify_fcs(tmp,FCS_SIZE_SABM,get_rfcomm_fcs(tmp)) == FCS_FAIL) 
 								halUsbSendStr("FCS not ok\n");
 
@@ -612,12 +621,36 @@ process_l2cap_pkt(uint16_t conn_handle,
 							halUsbSendStr("UA\n");
 							break;
 						case DM:
+					 		/*
+					 		 *	The DM response shall be used to report a status where the 
+							 *	station is logically disconnected from the data link. 
+							 *	When in disconnected mode no commands are accepted until the disconnected 
+					 		 *	mode is terminated by the receipt of a SABM command. If a DISC command 
+							 *	is received while in disconnected mode a DM response should be sent.
+					 		 */
+
 							if(verify_fcs(tmp,FCS_SIZE_DM,get_rfcomm_fcs(tmp)) == FCS_FAIL) 
 								halUsbSendStr("FCS not ok\n");
 
 							halUsbSendStr("DM\n");
 							break;
 						case DISC:
+							
+							/*
+							 *	The DISC command shall be used to terminate an 
+							 *	operational or initialization mode previously set 
+							 *	by a command. It shall be used to inform one station 
+							 *	that the other station is suspending operation and 
+							 *	that the station should assume a logically disconnected 
+							 *	mode. Prior to actioning the command, the receiving station 
+							 *	shall confirm the acceptance of the DISC command by the 
+							 *	transmission of a UA response. DISC command sent at DLCI 0 
+							 *	have the same meaning as the Multiplexer Close Down command 
+							 *	(see subclause 5.4.6.3.3). See also subclause 5.8.2 for more 
+							 *	information about the Close-down procedure.
+							 */
+
+
 							if(verify_fcs(tmp,FCS_SIZE_DISC,get_rfcomm_fcs(tmp)) == FCS_FAIL)
 								halUsbSendStr("FCS not ok\n");
 

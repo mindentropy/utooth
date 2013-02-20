@@ -228,6 +228,16 @@ typedef enum rls_param_offset {
 			+ (get_rfcomm_len_size(rfcomm_pkt_buff)))
 			
 
+/* 				 Address Field 				*/
+/*
+ *  +------------------------------------------------+
+ *  |Bit No.| 1  |  2  | 3 | 4  |  5 |  6 |  7 |  8  |
+ *  +------------------------------------------------+
+ *  |RFCOMM | EA | C/R | D |   Server Channel        |
+ *  +------------------------------------------------+
+ *
+ */
+
 //EA field is set to 1 for disable.
 #define disable_ea_addr_field(rfcomm_pkt_buff) \
 	write8_buff_le(rfcomm_pkt_buff,\
@@ -240,7 +250,26 @@ typedef enum rls_param_offset {
 		RFCOMM_ADDR_OFFSET,\
 		get_rfcomm_addr(rfcomm_pkt_buff) & ~(EA_DISABLE))
 	
-
+/*
+ *
+ * +-------------------+----------------------------------+-------------+
+ * | Command/Response  |           Direction              |  C/R value  |
+ * +-------------------+----------------------------------+-------------+ 
+ * | 	Command        |     Initiator ---> Responder	  |     1	    |
+ * |                   |     Responder ---> Initiator     |     0       |
+ * +-------------------+----------------------------------+-------------+ 
+ * | 	Response       |     Initiator ---> Responder     |     0       |
+ * |                   |     Responder ---> Initiator     |     1       |
+ * +-------------------+----------------------------------+-------------+
+ *
+ * An example of a command and response:
+ * The 'command' SABM is sent. C/R bit is 1.
+ * The 'response' is sent by the responder to the intiator using a UA pkt.
+ * C/R bit is set to 1. Note that the C/R bit is set to 1 in this case too.
+ * Only if a 'command' is again sent from the responder to the initiator
+ * will the C/R bit be set to 0.
+ *
+ */
 #define enable_cr_addr_field(rfcomm_pkt_buff) \
 	write8_buff_le(rfcomm_pkt_buff,\
 		RFCOMM_ADDR_OFFSET,\
@@ -251,6 +280,10 @@ typedef enum rls_param_offset {
 		RFCOMM_ADDR_OFFSET,\
 		get_rfcomm_addr(rfcomm_pkt_buff) & ~(CMD_RESP_ENABLE<<1))
 
+/*
+ * For RFCOMM the initiating device is given the direction bit D=1
+ * and conversly D=0 for the other device.
+ */
 #define enable_dir_addr_field(rfcomm_pkt_buff) \
 	write8_buff_le(rfcomm_pkt_buff,\
 		RFCOMM_ADDR_OFFSET,	\

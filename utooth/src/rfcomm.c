@@ -127,8 +127,13 @@ uint8_t get_rfcomm_len_size(uint8_t *rfcomm_pkt_buff) {
 }
 
 
+/* 
+ * Send UA (Unnumbered acknowledgement) packet to acknowledge the
+ * receipt and acceptance of SABM and DISC commands
+ */
 void create_ua_pkt(uint8_t chaddr,uint8_t *rfcomm_pkt_buff) {
 	disable_ea_addr_field(rfcomm_pkt_buff);
+
 	enable_cr_addr_field(rfcomm_pkt_buff);
 	disable_dir_addr_field(rfcomm_pkt_buff);
 	set_rfcomm_server_channel(rfcomm_pkt_buff,chaddr);
@@ -139,9 +144,7 @@ void create_ua_pkt(uint8_t chaddr,uint8_t *rfcomm_pkt_buff) {
 	set_rfcomm_len_field_lsb(rfcomm_pkt_buff,0);
 	disable_rfcomm_len_ea(rfcomm_pkt_buff);
 
-
 	set_rfcomm_fcs(rfcomm_pkt_buff);
-
 }
 
 
