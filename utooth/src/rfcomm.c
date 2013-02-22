@@ -106,7 +106,6 @@ uint8_t get_rfcomm_payload_len(uint8_t *rfcomm_pkt_buff) {
 
 //TODO: Adjust length size based on the length extension field.
 uint8_t get_rfcomm_fcs(uint8_t *rfcomm_pkt_buff) {
-	
 	if(get_rfcomm_control_field(rfcomm_pkt_buff) == UIH)
 		return read8_buff_le(rfcomm_pkt_buff,RFCOMM_HEADER_SIZE 
 			+ get_rfcomm_payload_len(rfcomm_pkt_buff)

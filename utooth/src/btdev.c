@@ -238,20 +238,20 @@ int main(void) {
 		}
 
 
-		if(!(halButtonsPressed() & BUTTON_S2)) {
+		/*if(!(halButtonsPressed() & BUTTON_S2)) {
 			halUsbSendStr("conn_req\n");
 			l2cap_connect_request(testbdaddr,
 							l2cap_pkt_buff,
 							PSM_RFCOMM
-							);
+							);*/
 
-			/*l2cap_ping(testbdaddr,
+			/* l2cap_ping(testbdaddr,
 				&l2capinfo,
 				l2cap_pkt_buff,
 				NULL,
 				0);*/
-			long_wait();
-		}
+		/*	long_wait();
+		}*/
 
 
 		for(i = 0;i<15;i++) {

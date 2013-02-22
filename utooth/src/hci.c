@@ -505,7 +505,6 @@ void process_connection_request_event() {
 	bdaddr_t tmpbdaddr;
 
 	halUsbSendStr("connreqevt\n");
-
 	conn_index = get_empty_conn_info(conn_info);
 
 	if(conn_index != -1) {
@@ -532,12 +531,12 @@ void process_connection_request_event() {
 		sprintf(tmpbuff,"link type %x\n\n",conn_info[conn_index].link_type);
 		halUsbSendStr(tmpbuff);
 
+		halUsbSendStr("AcceptConnReqSent\n");
 		send_hci_cmd(OGF_HCI_LINK_CONTROL,
 			OCF_ACCEPT_CONN_REQ,
 			1,
 			conn_info[conn_index].remote_bd_info.bdaddr);
 
-		halUsbSendStr("ConnectionRequestSent\n");
 		conn_info[conn_index].conn_status = CONNECTING;
 		get_remote_name_request(conn_info[conn_index].remote_bd_info.bdaddr);
 
@@ -558,6 +557,7 @@ void process_disconnection_complete_event() {
 	halUsbSendStr(tmpbuff);
 
 	index = get_index_from_connection_handle(conn_info,val = read16_le());
+
 	sprintf(tmpbuff,"connection handle : %x\n",val);
 	halUsbSendStr(tmpbuff);
 
@@ -565,6 +565,7 @@ void process_disconnection_complete_event() {
 	halUsbSendStr(tmpbuff);
 
 	conn_info[index].conn_status = DISCONNECTED;
+
 }
 
 //TODO: Handle error conditions.
@@ -573,7 +574,9 @@ void process_connection_complete_event() {
 	uint8_t errorcode;
 	bdaddr_t remote_bdaddr;
 	int8_t conn_index = 0;
+	
 
+	halUsbSendStr("conncompleteevt\n");
 	errorcode = read8_le();
 	sprintf(tmpbuff,"Status : %x\n",errorcode);
 	halUsbSendStr(tmpbuff);
@@ -618,6 +621,12 @@ void process_connection_complete_event() {
 	while(!cq_is_empty(&rx_q)) {
 		halUsbSendChar(read8_le());
 	}
+
+	//Send a l2cap connection request.
+	l2cap_connect_request(conn_info[conn_index].remote_bd_info.bdaddr,
+						l2cap_pkt_buff,
+						PSM_RFCOMM);
+
 }
 
 void process_num_of_completed_pkts() {
@@ -683,10 +692,10 @@ void process_remote_name_req() {
 	while(((ch = read8_le()) != 0x00)) {
 		halUsbSendChar(ch);
 
-		if(index != -1)
+		if(index != -1) //Update if index is present.
 			inq_result_remote_bd_info[index].remote_bd_name[i] = ch;
 
-		if(conn_index != -1)
+		if(conn_index != -1) //Update if conn_index is present.
 			conn_info[conn_index].remote_bd_info.remote_bd_name[i] = ch;
 
 		i++;
@@ -704,11 +713,12 @@ void process_role_change() {
 	char tmpbuff[20];
 	bdaddr_t bdaddr;
 
-	sprintf(tmpbuff,"%u\n",read8_le());
+	halUsbSendStr("rolechange\n");
+	sprintf(tmpbuff,"status:%u\n",read8_le());
 	halUsbSendStr(tmpbuff);
 
 	read_bd_addr(bdaddr);
-	sprintf(tmpbuff,"\n%02x:%02x:%02x:%02x:%02x:%02x\n",
+	sprintf(tmpbuff,"%02x:%02x:%02x:%02x:%02x:%02x\n",
 					bdaddr[5],
 					bdaddr[4],
 					bdaddr[3],
@@ -765,7 +775,6 @@ void handle_hci_event(uint8_t evt_code,uint8_t len) {
 			break;
 		case CONNECTION_COMPLETE_EVENT:
 			process_connection_complete_event();
-			halUsbSendStr("connection complete\n");
 			sys_stat = STAT_IDLE;
 			break;
 		case COMMAND_STATUS_EVENT:
@@ -776,7 +785,8 @@ void handle_hci_event(uint8_t evt_code,uint8_t len) {
 			break;
 		case PAGE_SCAN_REPETITION_MODE_CHANGE_EVENT:
 			halUsbSendStr("pgscanrepmode\n");
-			for(i = 0;i<(BDADDR_SIZE-1);i++) {
+			cq_discard(&rx_q,7); //Discard 7 octets.
+			/*for(i = 0;i<(BDADDR_SIZE-1);i++) {
 				sprintf(tmpbuff,"%x:",read8_le());
 				halUsbSendStr(tmpbuff);
 			}
@@ -784,13 +794,15 @@ void handle_hci_event(uint8_t evt_code,uint8_t len) {
 			halUsbSendStr(tmpbuff);
 	
 			sprintf(tmpbuff,"pgscanrepmode:%x\n",read8_le());
-			halUsbSendStr(tmpbuff);
+			halUsbSendStr(tmpbuff);*/
 			break;
 		case MAX_SLOTS_CHANGE_EVENT:
-			sprintf(tmpbuff,"connection handle:%u\n",read16_le());
+			//Discard 3 octets.
+			cq_discard(&rx_q,3);
+			/*sprintf(tmpbuff,"connection handle:%u\n",read16_le());
 			halUsbSendStr(tmpbuff);
 			sprintf(tmpbuff,"Max slots:%x\n\n",read8_le());
-			halUsbSendStr(tmpbuff);
+			halUsbSendStr(tmpbuff);*/
 			break;
 		case NUM_OF_COMPLETED_PACKETS_EVENT:
 			process_num_of_completed_pkts();
@@ -954,7 +966,7 @@ void create_connection(bdaddr_t bdaddr) {
 	index = get_index_from_inquiry_list(inq_result_remote_bd_info,
 								bdaddr);
 	
-	sprintf(tmpbuff,"%d\n",(int)index);
+	sprintf(tmpbuff,"index: %d\n",(int)index);
 	halUsbSendStr(tmpbuff);
 	
 	conn_index = get_empty_conn_info(conn_info);
