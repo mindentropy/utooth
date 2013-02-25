@@ -12,8 +12,8 @@ void waitAboutOneSecond(void){
 
 
 uint8_t flash_read_byte(uint32_t addr) {
+	register uint32_t status_reg,flash;
 	uint8_t flash_data;
-	uint32_t register status_reg,flash;
 
 //		flash_data -> %0
 //		status_reg -> %1

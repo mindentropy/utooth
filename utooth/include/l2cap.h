@@ -174,6 +174,8 @@
 #define L2CAP_CFRAME_CMD_CONF_REQ_CONFIG_OPT_OFFSET \
 				((L2CAP_CFRAME_HEADER_SIZE) + (CTRL_SIG_CMD_CONF_REQ_CONF_OPT_OFFSET))
 
+
+
 #define L2CAP_CFRAME_CMD_CONF_RESP_SCID_OFFSET	\
 				((L2CAP_CFRAME_HEADER_SIZE) + (CTRL_SIG_CMD_CONF_RESP_SCID_OFFSET))
 
@@ -642,9 +644,10 @@ struct config_options {
 
 struct l2cap_info {
 	uint8_t 	cmd_sigid;
-	uint16_t 	dcid;
+	uint16_t 	dcid; //Remote host channel id.
 	
 	L2CAP_STATE l2cap_state;
+
 	void (*l2cap_pong_cb)(struct l2cap_info *l2cap_info,uint8_t argcnt,...);
 
 	struct config_options conf_opt;
@@ -658,6 +661,7 @@ struct l2cap_conn {
 	struct list_head list;
 	uint16_t channel_id; //Represent the channel endpoint. Single channel can
 						// have multiple endpoints. Hence its present in a pool.
+						// This is my local host channel id.
 	
 	struct l2cap_info l2cap_info;
 

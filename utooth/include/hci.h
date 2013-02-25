@@ -321,6 +321,7 @@ struct connection_info {
 	set_rx_state(evt_state,PACKET_TYPE)
 
 
+
 void hci_init();
 void hci_send_packet_type(enum hci_packet_type hci_pkt_type);
 void hci_send_data(uint8_t *hci_cmd_buff, uint16_t len);

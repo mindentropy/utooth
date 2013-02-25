@@ -32,6 +32,8 @@ extern SYSTEM_STATUS sys_stat;
 
 uint8_t dbg_print_flg = 0;
 
+extern uint8_t tmp_chid;
+
 /*
 TODO:
 	1) Enable UART for bluetooth.
@@ -171,7 +173,7 @@ int main(void) {
 	
 //	unsigned char ch = 32;
 	__delay_cycles(50000);
-
+	
 	halBoardInit();
 	halBoardStartXT1();
 	halBoardSetSystemClock(SYSCLK_16MHZ);
@@ -237,6 +239,13 @@ int main(void) {
 			long_wait();
 		}
 
+
+		if(!(halButtonsPressed() & BUTTON_S2)) {
+			/*reset_inquiry_results();
+			send_inquiry_request();*/
+			halUsbSendStr("rfcommconn\n");
+			rfcomm_connect_request(testbdaddr,tmp_chid);
+		}
 
 		/*if(!(halButtonsPressed() & BUTTON_S2)) {
 			halUsbSendStr("conn_req\n");

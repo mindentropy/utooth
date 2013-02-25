@@ -478,6 +478,10 @@ void process_inquiry_result_event(uint8_t is_rssi) {
 }
 
 
+void reset_inquiry_results() {
+	inquiry_results = 0;
+}
+
 void reject_connection_request(bdaddr_t bdaddr) {
 	uint8_t pbuff[BDADDR_SIZE + 1],payload = 0,i = 0;
 
@@ -655,7 +659,8 @@ void process_num_of_completed_pkts() {
 void process_remote_name_req() {
 	bdaddr_t bdaddr;
 	char tmpbuff[20];
-	uint8_t index = 0,conn_index = 0, i = 0,status = 0;
+	uint8_t  i = 0,status = 0;
+	int16_t index = 0,conn_index = 0;
 	char ch;
 
 	status = read8_le();

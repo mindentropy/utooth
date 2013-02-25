@@ -7,7 +7,7 @@ struct cq uartcq;
 /* Setting to default clocks*/
 void usb_uart_init() {
 	
-	cq_init(&uartcq);
+	cq_init(&uartcq,BUFFSIZE);
 
 	/* Port pin settings */
 	USB_PORT_SEL |= (USB_TXD_PIN|USB_RXD_PIN); //Set to secondary functions.

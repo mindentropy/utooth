@@ -125,6 +125,32 @@ uint8_t get_rfcomm_len_size(uint8_t *rfcomm_pkt_buff) {
 		return NORMAL_HEADER_LEN_SIZE;
 }
 
+/*
+ * SABM pkt
+ * --------
+ * The addr or the dlci is equal to 0.
+ * The station wishing to establish a DLC transmits a SABM frame with the P-bit
+ * set to 1. The address field contains the DLCI value associated with the desired 
+ * connection. If the responding station is ready to establish the connection it 
+ * will reply with a UA frame with the F-bit set to 1. If the responding station 
+ * is not ready or unwilling to establish the particular DLC it will reply with a 
+ * DM frame with the F-bit set to 1.
+ */
+
+void create_sabm_pkt(uint8_t *rfcomm_pkt_buff) {
+	disable_ea_addr_field(rfcomm_pkt_buff);
+	
+	enable_cr_addr_field(rfcomm_pkt_buff);
+	disable_dir_addr_field(rfcomm_pkt_buff);
+
+	set_rfcomm_server_channel(rfcomm_pkt_buff,RFCOMM_SABM_ADDR);
+	set_rfcomm_ctrl_field(rfcomm_pkt_buff,SABM);
+	set_rfcomm_poll_final_bit(rfcomm_pkt_buff);
+	
+	set_rfcomm_len_field_lsb(rfcomm_pkt_buff,0);
+	disable_rfcomm_len_ea(rfcomm_pkt_buff);
+	set_rfcomm_fcs(rfcomm_pkt_buff);
+}
 
 /* 
  * Send UA (Unnumbered acknowledgement) packet to acknowledge the
@@ -325,6 +351,9 @@ uint8_t get_rfcomm_pkt_size(uint8_t *rfcomm_pkt_buff) {
 		
 	}
 }
+
+
+
 
 void process_rfcomm_pkt(
 				uint8_t *rfcomm_pkt_buff,

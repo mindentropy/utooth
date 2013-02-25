@@ -95,8 +95,8 @@ void hal_uart_dma_init(void) {
 	UCA2CTL1 &= ~UCSWRST; // Remove UART reset
 
 	/* Enable Rx interrupt */
-	cq_init(&tx_q);
-	cq_init(&rx_q);
+	cq_init(&tx_q,BUFFSIZE);
+	cq_init(&rx_q,BUFFSIZE);
 	hal_uart_dma_set_baud(115200);
 
 

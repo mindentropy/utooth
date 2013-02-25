@@ -181,6 +181,8 @@ typedef enum rls_param_offset {
 
 #define MSG_DLCI		0
 
+#define RFCOMM_SABM_ADDR	0
+
 /***********************MSG params***********************************/
 #define RFCOMM_MAX_FRAME_SIZE	336
 /*******************************************************************/
@@ -230,11 +232,11 @@ typedef enum rls_param_offset {
 
 /* 				 Address Field 				*/
 /*
- *  +------------------------------------------------+
+ *  +-------+----+-----+---+----+----+----+----+-----+
  *  |Bit No.| 1  |  2  | 3 | 4  |  5 |  6 |  7 |  8  |
- *  +------------------------------------------------+
+ *  +-------+----+-----+---+----+----+----+----+-----+
  *  |RFCOMM | EA | C/R | D |   Server Channel        |
- *  +------------------------------------------------+
+ *  +-------+----+-----+---+-------------------------+
  *
  */
 
@@ -793,6 +795,8 @@ uint8_t verify_fcs(uint8_t *rfcomm_pkt_buff,
 					uint8_t recvd_fcs);
 	
 uint8_t create_fcs(uint8_t *rfcomm_pkt_buff,uint8_t len);
+
+void create_sabm_pkt(uint8_t *rfcomm_pkt_buff);
 void create_ua_pkt(uint8_t chaddr,uint8_t *rfcomm_pkt_buff);
 void create_uih_pkt(uint8_t *rfcomm_pkt_buff,
 					uint8_t chaddr,

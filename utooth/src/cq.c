@@ -10,19 +10,26 @@ extern struct cq rx_q;
 extern struct cq tx_q;
 
 
-void cq_init(struct cq * const cq) {
-	cq->start = cq->end = 0;
-	cq->curfreesize = MODSIZE;
+void cq_init(struct cq * const cq,uint16_t buffsize) {
+	cq->start = 0;
+	cq->end = 0;
+	
+	cq->buffsize = buffsize;
+	cq->modsize = (cq->buffsize) - 1;
+	
+	cq->curfreesize = cq->modsize;
+	
 }
 
 void cq_reset(struct cq * const cq) {
-	cq->start = cq->end = 0;
-	cq->curfreesize = MODSIZE;
+	cq->start = 0;
+	cq->end = 0;
+	cq->curfreesize = cq->modsize;
 }
 
 uint8_t cq_is_empty(struct cq * const cq) {
 
-	if(cq->curfreesize == MODSIZE) {
+	if((cq->curfreesize) == (cq->modsize)) {
 		return 1;
 	} else {
 		return 0;
@@ -31,7 +38,7 @@ uint8_t cq_is_empty(struct cq * const cq) {
 
 
 uint8_t cq_is_full(struct cq * const cq) {
-	if(cq->curfreesize == 0) {
+	if((cq->curfreesize) == 0) {
 		return 1;
 	} else {
 		return 0;
@@ -42,7 +49,7 @@ void cq_add(struct cq * const cq,uint8_t ch) {
 	cq->buff[cq->end] =  ch;
 	(cq->end)++;
 
-	if(((cq->end)) == BUFFSIZE) {
+	if(((cq->end)) == (cq->buffsize)) {
 		cq->end = 0;
 	}
 	
@@ -58,7 +65,7 @@ uint8_t cq_del(struct cq * const cq) {
 	ch = cq->buff[cq->start];
 	(cq->start)++;
 
-	if(((cq->start)) == BUFFSIZE)
+	if(((cq->start)) == (cq->buffsize))
 		(cq->start) = 0;
 
 	(cq->curfreesize)++;
@@ -74,8 +81,8 @@ uint8_t cq_del(struct cq * const cq) {
  * user of the function 
  */
 void cq_discard(struct cq * const cq,uint16_t size) {
-	if(((cq->start) + size) >= BUFFSIZE) 
-		(cq->start) = size - (BUFFSIZE - (cq->start));
+	if(((cq->start) + size) >= (cq->buffsize)) 
+		(cq->start) = size - ((cq->buffsize) - (cq->start));
 	 else 
 		(cq->start) += size;
 
@@ -83,9 +90,9 @@ void cq_discard(struct cq * const cq,uint16_t size) {
 }
 
 uint8_t cq_peek(struct cq * const cq,uint16_t index) {
-	if(((cq->start) + index) >= BUFFSIZE) { //If there is wrapping. Wrap to 0 and 
+	if(((cq->start) + index) >= (cq->buffsize)) { //If there is wrapping. Wrap to 0 and 
 											//then index.
-		index -= (BUFFSIZE - (cq->start));
+		index -= ((cq->buffsize) - (cq->start));
 		return cq->buff[index];
 	} else {	
 		return cq->buff[(cq->start) + index];
@@ -98,6 +105,6 @@ uint16_t cq_freesize(struct cq * const cq) {
 }
 
 uint16_t cq_used_size(struct cq * const cq) {
-	return BUFFSIZE - ((cq->curfreesize)+1);
+	return (cq->buffsize) - ((cq->curfreesize)+1);
 }
 

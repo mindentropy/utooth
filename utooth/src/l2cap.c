@@ -10,11 +10,14 @@ extern struct cq rx_q;
 extern struct cq tx_q;
 extern struct l2cap_info l2capinfo;
 extern struct connection_info conn_info[];
+extern uint8_t l2cap_pkt_buff[];
 
 uint8_t l2cap_sig_id;
 uint16_t l2cap_cur_cid;
 
 uint8_t credit_cnt = MAX_CREDIT_CNT;
+
+uint16_t tmp_chid = 0;
 
 struct l2cap_conn l2cap_conn_pool[L2CAP_CONN_POOL_SIZE];
 struct list_head l2cap_empty_pool;
@@ -76,6 +79,17 @@ void l2cap_init() {
 	l2cap_cur_cid = MIN_L2CAP_CID;
 }
 
+
+/*
+ * 	Configuration option data.
+ *	
+ *	LSB								  MSB
+ * 	+-------+-----------+-*-*-*-*-*-*-*-*
+ *	| type	|	length	|	option data	
+ *	+-------+-----------+-*-*-*-*-*-*-*-*
+ *	  b0		b1			b2 		b3
+ *
+ */
 void get_options(uint8_t *buff,uint8_t config_size,struct l2cap_info *l2cap_info) {
 	char tmpbuff[20];
 
@@ -124,9 +138,10 @@ void process_rfcomm_data_pkt(uint16_t conn_handle,
 }
 */
 
-void process_connection_request(uint16_t conn_handle,
-							uint16_t channelid,
-							uint16_t dcid,
+void process_connection_request(
+							uint16_t conn_handle,
+							uint16_t channelid, //my channel id.
+							uint16_t dcid, //remote device channel id
 							PSM_TYPE psm
 							) {
 	int conn_index = 0;
@@ -187,16 +202,14 @@ process_l2cap_pkt(uint16_t conn_handle,
 	l2cap_len = get_l2cap_len(l2cap_pkt_buff); //Read L2CAP len.
 	channel_id = get_l2cap_channel_id(l2cap_pkt_buff) ; //Read L2CAP channelid.
 /*	sprintf(tmpbuff,"l2cap len:%u\n",l2cap_len);
-	halUsbSendStr(tmpbuff);
-
-	sprintf(tmpbuff,"l2cap channelid:%x\n",channel_id);
 	halUsbSendStr(tmpbuff);*/
+
 
 	switch(channel_id) { 
 		case CHID_NULL_ID:
 			halUsbSendStr("Nullid\n");
 			break;
-		case CHID_SIGNALING_CHANNEL:
+		case CHID_SIGNALING_CHANNEL: //C - Frame
 			//halUsbSendStr("Signaling channel\n");
 			// Read code.
 			sprintf(tmpbuff,"cmdcode:%x\n",cmdcode = get_l2cap_cmd_code(l2cap_pkt_buff));
@@ -217,7 +230,7 @@ process_l2cap_pkt(uint16_t conn_handle,
 
 					break;
 				case SIG_CONNECTION_REQUEST:
-					halUsbSendStr("Connection Request\n");
+					halUsbSendStr(">Conn Req\n");
 
 					cmdid = get_l2cap_cmd_id(l2cap_pkt_buff);
 					signal_len = get_l2cap_cmd_len(l2cap_pkt_buff);
@@ -231,15 +244,17 @@ process_l2cap_pkt(uint16_t conn_handle,
 
 					halUsbSendChar('\n');
 					
-					dcid = gen_l2cap_channel_id();
+					dcid = gen_l2cap_channel_id(); //Generate a cid for myself.
+					tmp_chid = dcid;
 
 					process_connection_request(
-										get_acl_conn_handle(conn_handle),
-										dcid,
-										scid,
-										get_l2cap_cmd_conn_req_psm(l2cap_pkt_buff)
-										);
+							get_acl_conn_handle(conn_handle),
+							dcid,
+							scid,
+							get_l2cap_cmd_conn_req_psm(l2cap_pkt_buff)
+							);
 
+					halUsbSendStr("<Conn Resp\n");
 					l2cap_send_connection_response(
 						conn_handle,
 						get_l2cap_cmd_id(l2cap_pkt_buff),
@@ -258,14 +273,14 @@ process_l2cap_pkt(uint16_t conn_handle,
 							
 					break;
 				case SIG_CONNECTION_RESPONSE:
-					halUsbSendStr("Connection response\n");
+					halUsbSendStr(">Conn Resp\n");
 					
 					cmdid = get_l2cap_cmd_id(l2cap_pkt_buff);					
 					signal_len = get_l2cap_cmd_len(l2cap_pkt_buff);
 
 					sprintf(tmpbuff,"did:%x,sid:%x,res:%x,stat:%x\n",
 							get_l2cap_cmd_conn_resp_dcid(l2cap_pkt_buff),
-							get_l2cap_cmd_conn_resp_scid(l2cap_pkt_buff),
+							tmp_chid = get_l2cap_cmd_conn_resp_scid(l2cap_pkt_buff),
 							get_l2cap_cmd_conn_resp_result(l2cap_pkt_buff),
 							get_l2cap_cmd_conn_resp_status(l2cap_pkt_buff)
 							);
@@ -294,7 +309,7 @@ process_l2cap_pkt(uint16_t conn_handle,
 
 					break;
 				case SIG_CONFIGURATION_REQUEST:
-					halUsbSendStr("Configuration req\n");
+					halUsbSendStr(">Config req\n");
 					
 					cmdid = get_l2cap_cmd_id(l2cap_pkt_buff);
 					signal_len = get_l2cap_cmd_len(l2cap_pkt_buff);
@@ -322,7 +337,7 @@ process_l2cap_pkt(uint16_t conn_handle,
 					
 					halUsbSendChar('\n');
 
-					halUsbSendStr("SendingConfResp\n");
+					halUsbSendStr("<Conf Resp\n");
 					/*
 						TODO: 
 						Accept or reject parameters based on configuration rules.
@@ -334,6 +349,7 @@ process_l2cap_pkt(uint16_t conn_handle,
 					set_l2cap_signal_cmd_conf_resp_result(l2cap_pkt_buff,CONFIG_SUCCESS);
 					i = 0;
 					tmp = l2cap_pkt_buff + L2CAP_CFRAME_CMD_CONF_RESP_CONFIG_OPT_OFFSET;
+
 					//Check for the configuration options set. Based on this build the configuration response.
 					if((conn->l2cap_info).conf_opt.option_bits & MTU_OPTION_BIT) {
 						if((conn->l2cap_info).conf_opt.mtu != L2CAP_PAYLOAD_MTU) {
@@ -348,7 +364,8 @@ process_l2cap_pkt(uint16_t conn_handle,
 							if((conn->l2cap_info).conf_opt.flush_timeout != L2CAP_FLUSH_TIMEOUT) {
 								set_l2cap_signal_cmd_conf_resp_result(l2cap_pkt_buff,
 												FAILURE_UNACCEPTABLE_PARAMETERS);
-								set_l2cap_signal_flush_timeout_option(tmp,L2CAP_FLUSH_TIMEOUT); //Set the acceptable parameter.
+								set_l2cap_signal_flush_timeout_option(tmp,
+														L2CAP_FLUSH_TIMEOUT); //Set the acceptable parameter.
 								tmp += TOTAL_OPTION_LEN(FLUSH_TIMEOUT_OPTION_LEN); //Increase the offset by the total option len.
 								cmd_len += TOTAL_OPTION_LEN(FLUSH_TIMEOUT_OPTION_LEN);
 							}
@@ -365,9 +382,10 @@ process_l2cap_pkt(uint16_t conn_handle,
 
 					//TODO:Send the destination channelid 
 					//i.e. the endpoint receiving the response. BUG below!!
-					set_l2cap_signal_cmd_conf_resp_scid(l2cap_pkt_buff,(conn->l2cap_info).dcid); 
-																				
-					set_l2cap_signal_cmd_conf_resp_flags(l2cap_pkt_buff,L2CAP_CONF_NOCONTINUE_FLAG);
+					set_l2cap_signal_cmd_conf_resp_scid(l2cap_pkt_buff,
+												(conn->l2cap_info).dcid); 
+					set_l2cap_signal_cmd_conf_resp_flags(l2cap_pkt_buff,
+												L2CAP_CONF_NOCONTINUE_FLAG);
 					
 					send_hci_acl_header(conn_handle,
 										PB_FIRST_AUTO_FLUSH_PKT,
@@ -387,7 +405,7 @@ process_l2cap_pkt(uint16_t conn_handle,
 
 					break;
 				case SIG_CONFIGURATION_RESPONSE:
-					halUsbSendStr("Configuration Response\n");
+					halUsbSendStr(">Config Resp\n");
 
 					cmdid = get_l2cap_cmd_id(l2cap_pkt_buff);
 					signal_len = get_l2cap_cmd_len(l2cap_pkt_buff);
@@ -401,6 +419,13 @@ process_l2cap_pkt(uint16_t conn_handle,
 								get_l2cap_cmd_conf_resp_result(l2cap_pkt_buff));
 					halUsbSendStr(tmpbuff);
 
+					get_options(
+						l2cap_pkt_buff + L2CAP_CFRAME_CMD_CONF_RESP_CONFIG_OPT_OFFSET,
+						signal_len - CTRL_SIG_CMD_SCID_SIZE - CTRL_SIG_CMD_FLAGS_SIZE - CTRL_SIG_CMD_RESULT_SIZE,
+						&(conn->l2cap_info)
+					);
+					
+					halUsbSendChar('\n');
 					break;
 				case SIG_DISCONNECTION_REQUEST:
 					halUsbSendStr("DisconnReq\n");
@@ -452,6 +477,7 @@ process_l2cap_pkt(uint16_t conn_handle,
 					signal_len = get_l2cap_cmd_len(l2cap_pkt_buff);
 
 	/*				halUsbSendStr("Echo request\n"); */
+					halUsbSendStr(">Ping\n");
 					sprintf(tmpbuff,"id:%x\n",cmdid);
 					halUsbSendStr(tmpbuff);
 
@@ -464,7 +490,7 @@ process_l2cap_pkt(uint16_t conn_handle,
 					
 					halUsbSendChar('\n');
 
-					halUsbSendStr("Pong\n");
+					halUsbSendStr("<Pong\n");
 					sprintf(tmpbuff,"chid:%u,cmdid:%u\n",channel_id,cmdid);
 					halUsbSendStr(tmpbuff);
 					
@@ -491,26 +517,35 @@ process_l2cap_pkt(uint16_t conn_handle,
 
 					break;
 				case SIG_ECHO_RESPONSE:
-					halUsbSendStr("Echo response\n");
+					halUsbSendStr(">Pong\n");
 					//Call the pong call back here.
 //					l2capinfo.l2cap_pong_cb(&l2capinfo,0);
 					break;
 				case SIG_INFO_REQUEST:
-					halUsbSendStr("Information Request\n");
+					halUsbSendStr(">Info Req\n");
 					sprintf(tmpbuff,"infotype:%x\n",
 								infotype = get_l2cap_cmd_info_req_infotype(l2cap_pkt_buff));
 					halUsbSendStr(tmpbuff);
 
-
+		
 					/* Send information response */
+					halUsbSendStr("<Info Resp\n");
 					cmd_len = CTRL_SIG_CMD_INFO_RESP_PAYLOAD_SIZE;
 
-					if(infotype == 2) {
-						set_l2cap_signal_cmd_info_resp_result(l2cap_pkt_buff,INFO_NOT_SUPPORTED);
-					} else if(infotype == 1){
-						set_l2cap_signal_cmd_info_resp_result(l2cap_pkt_buff,INFO_SUCCESS);
-						cmd_len+=CTRL_SIG_INFO_CONNECTIONLESS_MTU_SIZE;
-						set_l2cap_signal_cmd_info_resp_data_mtu(l2cap_pkt_buff,L2CAP_PAYLOAD_MTU);
+/*
+ * 	I am not supporting extended features.
+ * 	Connectionless mtu is supported. Sending the size of the connection 
+ * 	less mtu size I am supporting.
+ */
+					if(infotype == EXTENDED_FEATURES_SUPPORTED) {
+						set_l2cap_signal_cmd_info_resp_result(l2cap_pkt_buff,
+														INFO_NOT_SUPPORTED);
+					} else if(infotype == CONNECTIONLESS_MTU){
+						set_l2cap_signal_cmd_info_resp_result(l2cap_pkt_buff,
+															INFO_SUCCESS);
+						cmd_len += CTRL_SIG_INFO_CONNECTIONLESS_MTU_SIZE;
+						set_l2cap_signal_cmd_info_resp_data_mtu(l2cap_pkt_buff,
+														L2CAP_PAYLOAD_MTU);
 					}
 
 					set_l2cap_sig_cmd_header(l2cap_pkt_buff,
@@ -519,7 +554,8 @@ process_l2cap_pkt(uint16_t conn_handle,
 												cmdid,
 												cmd_len);
 
-					set_l2cap_signal_cmd_info_req_resp_infotype(l2cap_pkt_buff,infotype);
+					set_l2cap_signal_cmd_info_req_resp_infotype(l2cap_pkt_buff,
+																infotype);
 					/*extended_feature_mask = (FLOW_CONTROL_MODE | RETRANSMISSION_MODE);
 					set_l2cap_signal_cmd_info_resp_data(l2cap_pkt_buff,
 													extended_feature_mask);*/
@@ -541,10 +577,11 @@ process_l2cap_pkt(uint16_t conn_handle,
 					break;
 			}
 			break;
-		case CHID_CONNECTIONLESS_RECEPTION_CHANNEL:
+		case CHID_CONNECTIONLESS_RECEPTION_CHANNEL: //G-Frame.
 			halUsbSendStr("connectionlessrecepchannel\n");
 			break;
 		default:
+
 			/* 	
 				NOTE: PSM value is associated with the channel id. Hence to know the 
 				protocol traverse the connection pool and get the l2cap_info psm value.
@@ -557,6 +594,11 @@ process_l2cap_pkt(uint16_t conn_handle,
 								get_acl_conn_handle(conn_handle),
 								channel_id
 								);
+
+			/*
+			sprintf(tmpbuff,"l2cap channelid:%x\n",channel_id);
+			halUsbSendStr(tmpbuff);
+			*/
 
 			if(conn == NULL) {
 				halUsbSendStr("conn NULL\n");
@@ -583,7 +625,7 @@ process_l2cap_pkt(uint16_t conn_handle,
 
 					switch(get_rfcomm_control_field(tmp)) {
 						case SABM:
-							halUsbSendStr("SABM\n");
+							halUsbSendStr(">SABM\n");
 
 							/*
 							 *	The SABM command shall be used to place the addressed station 
@@ -615,12 +657,13 @@ process_l2cap_pkt(uint16_t conn_handle,
 
 							break;
 						case UA:
+							halUsbSendStr(">UA\n");
 							if(verify_fcs(tmp,FCS_SIZE_UA,get_rfcomm_fcs(tmp)) == FCS_FAIL) 
 								halUsbSendStr("FCS not ok\n");
 
-							halUsbSendStr("UA\n");
 							break;
 						case DM:
+							halUsbSendStr(">DM\n");
 					 		/*
 					 		 *	The DM response shall be used to report a status where the 
 							 *	station is logically disconnected from the data link. 
@@ -632,7 +675,6 @@ process_l2cap_pkt(uint16_t conn_handle,
 							if(verify_fcs(tmp,FCS_SIZE_DM,get_rfcomm_fcs(tmp)) == FCS_FAIL) 
 								halUsbSendStr("FCS not ok\n");
 
-							halUsbSendStr("DM\n");
 							break;
 						case DISC:
 							
@@ -654,7 +696,7 @@ process_l2cap_pkt(uint16_t conn_handle,
 							if(verify_fcs(tmp,FCS_SIZE_DISC,get_rfcomm_fcs(tmp)) == FCS_FAIL)
 								halUsbSendStr("FCS not ok\n");
 
-							halUsbSendStr("DISC\n");
+							halUsbSendStr(">DISC\n");
 
 							//Send a UA pkt.
 
@@ -673,7 +715,7 @@ process_l2cap_pkt(uint16_t conn_handle,
 
 							break;
 						case UIH:
-						//	halUsbSendStr("UIH\n");
+							//halUsbSendStr(">UIH\n");
 
 							/* For UIH calculate FCS on address and control fields only */
 							if(verify_fcs(tmp,FCS_SIZE_UIH,get_rfcomm_fcs(tmp)) == FCS_FAIL) 
@@ -765,7 +807,7 @@ process_l2cap_pkt(uint16_t conn_handle,
 										}
 										
 										if(is_valid_pn((conn->l2cap_info).rfcomm_conf_opt.config)) {
-											halUsbSendStr("valid pn\n");
+											//halUsbSendStr("valid pn\n");
 										}
 										
 										/* Respond with a PN response value of 14 (0xE) */
@@ -1047,8 +1089,9 @@ void l2cap_connect_request(bdaddr_t bdaddr,
 						data);
 
 	(data->l2cap_info).l2cap_state = WAIT_CONNECT_RSP;
-	data->channel_id = gen_l2cap_channel_id();
-
+	tmp_chid = data->channel_id = gen_l2cap_channel_id();
+	
+	
 	set_l2cap_len(l2cap_pkt_buff,CTRL_SIG_HEADER_SIZE + payload);
 	set_l2cap_channel_id(l2cap_pkt_buff,CHID_SIGNALING_CHANNEL);
 
@@ -1214,6 +1257,7 @@ void l2cap_send_connection_response(
 
 	return;
 }
+
 /*
 void l2cap_send_infotype_request(
 					uint16_t conn_handle,
@@ -1232,3 +1276,48 @@ void l2cap_send_infotype_request(
 	set_l2cap_signal_cmd_len(l2cap_pkt_buff,CTRL_SIG_CMD_INFO_REQ_PAYLOAD_SIZE);
 	
 }*/
+
+
+void rfcomm_connect_request(bdaddr_t bdaddr,uint16_t channel_id) {
+	uint8_t i = 0;
+	int8_t conn_index = 0;
+	struct l2cap_conn *node;
+	char tmpbuff[20];
+
+	conn_index = get_index_from_connection_info(
+										conn_info,
+										bdaddr
+										);
+	
+	if(conn_index == -1)
+		return;
+	
+	node = get_l2cap_conn_from_channel_id(conn_info,
+						conn_info[conn_index].connection_handle,
+						channel_id);
+	
+	sprintf(tmpbuff,"chid: %u\n",channel_id);
+	halUsbSendStr(tmpbuff);
+
+	if(node == NULL) 
+		return;
+
+	create_sabm_pkt(
+			get_l2cap_bframe_payload_buff(l2cap_pkt_buff)
+		);
+
+
+	create_l2cap_bframe_rfcomm_pkt(l2cap_pkt_buff,node);
+	
+	send_hci_acl_header(
+			get_acl_conn_handle(conn_info[conn_index].connection_handle),
+			PB_FIRST_AUTO_FLUSH_PKT,
+			H2C_NO_BROADCAST,
+			get_l2cap_bframe_size(l2cap_pkt_buff));
+
+	hci_send_data_chk(i,
+			l2cap_pkt_buff,
+			get_l2cap_bframe_size(l2cap_pkt_buff));
+
+	return;
+}
