@@ -229,7 +229,7 @@ int main(void) {
 
 
 	for(;;) {
-		blink_led1();
+		//blink_led1();
 		
 		if(!(halButtonsPressed() & BUTTON_S1)) {
 			halUsbSendStr("Create connection\n");

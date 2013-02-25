@@ -4,8 +4,8 @@
 
 #include <stdint.h>
 
-#define BUFFSIZE 260
-//#define BUFFSIZE 6
+//#define BUFFSIZE 260
+#define BUFFSIZE 257
 #define MODSIZE (BUFFSIZE - 1)
 
 struct cq {

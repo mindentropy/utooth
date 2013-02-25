@@ -125,8 +125,9 @@ int hal_uart_dma_set_baud(uint32_t baud) {
 	
 	switch(baud) {
 		case 115200:
-			UCA2BRW = 138;
-			UCA2MCTL = UCBRS_7;
+			//UCA2BRW = 138;
+			UCA2BRW = 8;
+			UCA2MCTL = UCBRS_0|UCBRF_11|UCOS16;
 			break;
 		default:
 			retval = -1;
@@ -174,11 +175,12 @@ int hal_uart_dma_send_data(uint8_t *buff,uint16_t len) {
 	for(i = 0;i<len;i++) {
 		__disable_interrupt();
 		cq_add(&tx_q,buff[i]);
-		enable_uart_tx_interrupt();	//Enable transfer interrupt.
 		__enable_interrupt();
 	}
 	
 	__enable_interrupt();
+	enable_uart_tx_interrupt();	//Enable transfer interrupt.
+
 	return len;
 }
 
@@ -189,9 +191,16 @@ void hal_uart_enable_rcv() {
 }
 
 inline void set_read_blk_size(uint16_t blksize) {
+	char tmpbuff[10];
 	readblksize  = blksize;
+	
+	/*sprintf(tmpbuff,"rbs: %u\n",blksize);
+	halUsbSendStr(tmpbuff);*/
+
 	enable_uart_rx_interrupt();
 	hal_uart_enable_rx();
+
+	
 }
 
 
@@ -231,7 +240,7 @@ __interrupt
 #endif
 void USCI_A2_ISR(void) {
 	uint8_t ch;
-	//char tmpbuff[20];
+	char tmpbuff[20];
 
 	switch(UCA2IV) {
 		case 0x00:
@@ -251,7 +260,10 @@ void USCI_A2_ISR(void) {
 				hal_uart_disable_rx();
 				disable_uart_rx_interrupt();
 				hci_rx_pkt_handler();
-			}
+				
+				
+			} 
+			
 			
 			led1_off();
 			break;
@@ -260,14 +272,18 @@ void USCI_A2_ISR(void) {
 			led2_on();
 			if(cq_is_empty(&tx_q)) {
 				disable_uart_tx_interrupt();
-				set_uart_tx_ifg();
+				//set_uart_tx_ifg();
 				led2_off();
 				return;
 			}
 			//halUsbSendChar('C');
 			ch = cq_del(&tx_q);
 			UCA2TXBUF = ch;
-			
+
+			if(cq_is_empty(&tx_q)) {
+				disable_uart_tx_interrupt();
+			}
+
 		/*	if(dbg_print_flg)
 				halUsbSendChar(ch);*/
 
@@ -290,7 +306,16 @@ __interrupt
 #endif
 void PORT1_CTS_ISR(void) 
 {
-	blink_led2();
+	while(1) {
+		blink_led2();
+
+		__delay_cycles(50000);
+		__delay_cycles(50000);
+		__delay_cycles(50000);
+		__delay_cycles(50000);
+	}
+
+	
 	P1IES |=  BT_CTS_PIN; //1 to 0 transition.
 	P1IV = 0; //Clear the interrupt. TODO:Clear CTS IFG only.
 	halUsbSendChar('C');

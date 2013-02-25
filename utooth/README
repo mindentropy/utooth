@@ -310,3 +310,38 @@ Use "rctest" with necessary parameters for RFCOMM testing.
 
 TODO: Examples and documentation.
  
+
+Notes on supposed cq bug.
+========================
+Description:
+-----------
+It had a characteristic of a critical bug. When the BUFFERSIZE of the
+transfer and receive queue was reduced to a number below 255 there was nothing on
+the serial terminal. When the service patch was loaded it looked like it was
+hanging. Circular queue was suspected. Analysis of the circular queue was
+done. Step by step review was done. 
+
+Bug Isolation:
+-------------
+Initially bad loading of the service patch was suspected. A dump of the service
+patch contents was done before sending. A compare program compared if there is 
+any drop in the bytes. There was simply no drops.
+
+After this the UART programming was suspected. There was a mistake in the removal
+of txflag. The initial misunderstanding was that the transfer flag UCTXIFG had
+to be enabled once the interrupts were disabled and enabled. This was not needed as
+per the TI examples. Just a interrupt enable disable toggle was enough it but had to be
+done in the ISR. After reviewing the RX ISR handling the ->readblksize<- was a suspect.
+A high readblksize would simply stall the receive ISR.
+
+Code Snippet.
+------------
+if(cq_used_size(&rx_q) >= readblksize) {
+	...
+}
+
+Due to this no message was on the terminal. Since there was no draining of the Rx buffer 
+from the CC256x module the module pulls up the CTS sometimes. Due to not draining of the
+Rx buffer there would be no message sent thereby not filling any data structures with useful
+data.
+

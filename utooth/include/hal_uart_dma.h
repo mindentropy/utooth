@@ -62,6 +62,7 @@
 #define disable_uart_tx_interrupt() \
 	UCA2IE &= ~UCTXIE
 
+
 #define set_uart_tx_ifg() \
 	UCA2IFG |= UCTXIFG
 
