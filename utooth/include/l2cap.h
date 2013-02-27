@@ -583,6 +583,11 @@ typedef enum frame_type {
 }FRAME_TYPE;
 
 
+typedef enum connect_initiate {
+	LOCAL,
+	REMOTE,
+} L2CAP_CONNECT_INITIATE;
+
 #define	FLOW_CONTROL_MODE  0x00000001
 #define	RETRANSMISSION_MODE  ((0x00000001)<< 1)
 #define	BI_QoS  ((0x00000001) << 2)
@@ -602,6 +607,9 @@ typedef enum PSM {
 	PSM_TUDI_C_PLANE 		= 0x001D,
 	PSM_TATT 				= 0x001F,
 }PSM_TYPE;
+
+
+
 
 typedef enum {
 	L2CAP_PKT_OK = 0x00,
@@ -642,10 +650,13 @@ struct config_options {
 	struct retransmission_flow_control_option retransmission_flow_control_option;
 };
 
+
 struct l2cap_info {
 	uint8_t 	cmd_sigid;
 	uint16_t 	dcid; //Remote host channel id.
 	
+	L2CAP_CONNECT_INITIATE connect_initiate;
+
 	L2CAP_STATE l2cap_state;
 
 	void (*l2cap_pong_cb)(struct l2cap_info *l2cap_info,uint8_t argcnt,...);

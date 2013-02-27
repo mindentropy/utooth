@@ -240,7 +240,7 @@ __interrupt
 #endif
 void USCI_A2_ISR(void) {
 	uint8_t ch;
-	char tmpbuff[20];
+	//char tmpbuff[20];
 
 	switch(UCA2IV) {
 		case 0x00:

@@ -22,6 +22,7 @@ uint16_t tmp_chid = 0;
 struct l2cap_conn l2cap_conn_pool[L2CAP_CONN_POOL_SIZE];
 struct list_head l2cap_empty_pool;
 
+
 uint8_t gen_l2cap_sig_id() {
 	if(l2cap_sig_id == MIN_L2CAP_SIG_ID)
 		l2cap_sig_id = 1;
@@ -644,7 +645,14 @@ process_l2cap_pkt(uint16_t conn_handle,
 							halUsbSendStr(tmpbuff);*/
 
 							//Send UA
-							create_ua_pkt(get_rfcomm_server_ch_addr(tmp),tmp);
+						//	create_ua_pkt(get_rfcomm_server_ch_addr(tmp),tmp);
+							create_rfcomm_pkt(tmp,
+									get_rfcomm_server_ch_addr(tmp),
+									0,
+									POLL_FINAL_ENABLE,
+									MSG_CMD,
+									UA);
+
 							create_l2cap_bframe_rfcomm_pkt(l2cap_pkt_buff,conn);
 
 							send_hci_acl_header(get_acl_conn_handle(conn_handle),
@@ -700,9 +708,15 @@ process_l2cap_pkt(uint16_t conn_handle,
 							halUsbSendStr(">DISC\n");
 
 							//Send a UA pkt.
-
-							create_ua_pkt(get_rfcomm_server_ch_addr(tmp),tmp);
-							create_l2cap_bframe_rfcomm_pkt(l2cap_pkt_buff,conn);
+							//create_ua_pkt(get_rfcomm_server_ch_addr(tmp),tmp);
+							create_rfcomm_pkt(tmp,
+									get_rfcomm_server_ch_addr(tmp),
+									0,
+									POLL_FINAL_ENABLE,
+									MSG_CMD,
+									UA);
+							create_l2cap_bframe_rfcomm_pkt(l2cap_pkt_buff,
+															conn);
 
 							send_hci_acl_header(get_acl_conn_handle(conn_handle),
 											PB_FIRST_AUTO_FLUSH_PKT,
@@ -822,10 +836,12 @@ process_l2cap_pkt(uint16_t conn_handle,
 
 										create_l2cap_bframe_rfcomm_pkt(l2cap_pkt_buff,conn);
 
-										send_hci_acl_header(get_acl_conn_handle(conn_handle),
+										send_hci_acl_header(
+														get_acl_conn_handle(conn_handle),
 														PB_FIRST_AUTO_FLUSH_PKT,
 														H2C_NO_BROADCAST,
-														get_l2cap_bframe_size(l2cap_pkt_buff));
+														get_l2cap_bframe_size(l2cap_pkt_buff)
+														);
 
 										hci_send_data_chk(i,
 											l2cap_pkt_buff,
@@ -852,15 +868,22 @@ process_l2cap_pkt(uint16_t conn_handle,
 										if(get_rfcomm_msg_type_cr(tmp) == MSG_CMD){
 											halUsbSendStr(">MSC cmd\n");
 										}
-
 										
-										create_uih_pkt(tmp,
-											get_rfcomm_server_ch_addr(tmp),
-											get_rfcomm_payload_len(tmp),
-											0,
-											MSG_RESP);
-													
-													
+										create_msc_msg(tmp,
+													MSG_RESP,
+													get_rfcomm_msg_msc_ctrl_sig_conf_pkt(tmp)
+													);
+
+										create_rfcomm_pkt(
+												tmp,
+												get_rfcomm_server_ch_addr(tmp),
+												get_rfcomm_payload_len(tmp),
+												POLL_FINAL_DISABLE,
+												MSG_RESP,
+												UIH
+												);
+										
+										
 										create_l2cap_bframe_rfcomm_pkt(l2cap_pkt_buff,conn);
 
 										send_hci_acl_header(get_acl_conn_handle(conn_handle),
@@ -873,18 +896,6 @@ process_l2cap_pkt(uint16_t conn_handle,
 											get_l2cap_bframe_size(l2cap_pkt_buff)
 											);
 										
-										//TODO:Create an MSC msg with the encapsulating UIH pkt.
-										/*
-										create_msc_msg(tmp,
-											get_rfcomm_server_ch_addr(tmp),
-											get_rfcomm_payload_len(tmp),
-											0,
-											MSG_CMD,
-											(MSC_CTRL_SIG_EA_MASK
-											| MSC_CTRL_SIG_RTC_MASK
-											| MSC_CTRL_SIG_RTR_MASK
-											| MSC_CTRL_SIG_DV_MASK));
-										*/
 
 										create_msc_msg(tmp,
 											MSG_CMD,
@@ -901,11 +912,6 @@ process_l2cap_pkt(uint16_t conn_handle,
 												MSG_CMD,
 												UIH
 												);
-										/*create_uih_pkt(tmp,
-											get_rfcomm_server_ch_addr(tmp),
-											get_rfcomm_payload_len(tmp),
-											0,
-											MSG_CMD);*/
 													
 										/*sprintf(tmpbuff,"signal: %x\n",
 											get_rfcomm_msg_msc_ctrl_sig_conf_pkt(tmp));
@@ -936,12 +942,20 @@ process_l2cap_pkt(uint16_t conn_handle,
 										set_rfcomm_msg_pm_msb_conf_pkt(tmp,
 											PM_XI_MASK|PM_XO_MASK|PM_RTRI_MASK|PM_RTRO_MASK|
 											PM_RTCI_MASK|PM_RTCO_MASK);
+										
 
-										create_uih_pkt(tmp,
+										create_rfcomm_pkt(tmp,
+											get_rfcomm_server_ch_addr(tmp),
+											get_rfcomm_payload_len(tmp),
+											POLL_FINAL_DISABLE,
+											MSG_RESP,
+											UIH);
+
+										/*create_uih_pkt(tmp,
 											get_rfcomm_server_ch_addr(tmp),
 											get_rfcomm_payload_len(tmp),
 											0,
-											MSG_RESP);
+											MSG_RESP);*/
 													
 													
 										create_l2cap_bframe_rfcomm_pkt(l2cap_pkt_buff,conn);
@@ -1106,10 +1120,11 @@ void l2cap_connect_request(bdaddr_t bdaddr,
 
 	add_to_pool_head(&(conn_info[index].l2cap_conn_pool),
 						data);
+	
 
 	(data->l2cap_info).l2cap_state = WAIT_CONNECT_RSP;
 	tmp_chid = data->channel_id = gen_l2cap_channel_id();
-	
+	(data->l2cap_info).connect_initiate = LOCAL;
 	
 	set_l2cap_len(l2cap_pkt_buff,CTRL_SIG_HEADER_SIZE + payload);
 	set_l2cap_channel_id(l2cap_pkt_buff,CHID_SIGNALING_CHANNEL);
@@ -1323,10 +1338,17 @@ void rfcomm_connect_request(bdaddr_t bdaddr,uint16_t channel_id) {
 	if(node == NULL) 
 		return;
 
-	create_sabm_pkt(
+/*	create_sabm_pkt(
 			get_l2cap_bframe_payload_buff(l2cap_pkt_buff)
-		);
+		);*/
 
+	create_rfcomm_pkt(
+		get_l2cap_bframe_payload_buff(l2cap_pkt_buff),
+		RFCOMM_SABM_ADDR,
+		0,
+		POLL_FINAL_ENABLE,
+		MSG_CMD,
+		SABM);
 
 	create_l2cap_bframe_rfcomm_pkt(l2cap_pkt_buff,node);
 	

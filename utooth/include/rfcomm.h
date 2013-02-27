@@ -11,10 +11,10 @@
 #define FCS_FAIL	0
 
 typedef enum rfcomm_frame_type { 
-	SABM = 0x2F,
-	UA   = 0x63,
-	DM   = 0x0F,
-	DISC = 0x43,
+	SABM = 0x2F, //Set Asynchronous balanced mode.
+	UA   = 0x63, //Unnumbered Acknowledgement
+	DM   = 0x0F, //Disconnected mode response.
+	DISC = 0x43, //
 	UIH  = 0xEF
 } RFCOMM_FRAME_TYPE;
 
@@ -31,6 +31,8 @@ typedef enum rfcomm_frame_msg_type {
 	RLS		=	0x50,
 	SNC		=	0xD0,
 } RFCOMM_FRAME_MSG_TYPE;
+
+
 
 struct rfcomm_config_options {
 	uint8_t config[8];
@@ -61,15 +63,6 @@ typedef enum param_offset_conf {
 	CREDITS_ISSUED_OFFSET,
 } PARAM_OFFSET_CONF;
 
-struct rfcomm_pn_msg_conf {
-	uint8_t dbit;
-	uint8_t ibit;
-	uint8_t pbit;
-	uint8_t tbit;
-	uint8_t nbit;
-	uint8_t nabit;
-	uint8_t kbit;
-};
 
 #define MSC_ADDRESS_FIELD_OFFSET	0
 #define MSC_CONTROL_SIGNAL_OFFSET	1
@@ -389,35 +382,50 @@ typedef enum rls_param_offset {
 
 #define get_rfcomm_msg_type_cr(rfcomm_pkt_buff) \
 	((read8_buff_le(rfcomm_pkt_buff,\
-		get_rfcomm_payload_offset(rfcomm_pkt_buff)) & CMD_RESP_MASK) >> 1)
+		get_rfcomm_msg_offset(rfcomm_pkt_buff)) & CMD_RESP_MASK) >> 1)
+
+
+/* EA Mods */
+//EA Field is set to 1 for disable.
+#define disable_rfcomm_msg_type_ea(rfcomm_pkt_buff)	\
+	(write8_buff_le(rfcomm_pkt_buff,\
+		get_rfcomm_msg_offset(rfcomm_pkt_buff),\
+		(read8_buff_le(rfcomm_pkt_buff,\
+			get_rfcomm_msg_offset(rfcomm_pkt_buff)) | EA_ADDR_LEN_MASK)))
+	
+#define enable_rfcomm_msg_type_ea(rfcomm_pkt_buff)	\
+	(write8_buff_le(rfcomm_pkt_buff,\
+		get_rfcomm_msg_offset(rfcomm_pkt_buff),\
+		(read8_buff_le(rfcomm_pkt_buff,\
+			get_rfcomm_msg_offset(rfcomm_pkt_buff)) & ~EA_ADDR_LEN_MASK)))
 
 #define enable_rfcomm_msg_type_cr(rfcomm_pkt_buff) \
 	(write8_buff_le(rfcomm_pkt_buff,\
-		get_rfcomm_payload_offset(rfcomm_pkt_buff),\
+		get_rfcomm_msg_offset(rfcomm_pkt_buff),\
 		(read8_buff_le(rfcomm_pkt_buff,\
-			get_rfcomm_payload_offset(rfcomm_pkt_buff)) | CMD_RESP_MASK)))
+			get_rfcomm_msg_offset(rfcomm_pkt_buff)) | CMD_RESP_MASK)))
 
 #define disable_rfcomm_msg_type_cr(rfcomm_pkt_buff) \
 	(write8_buff_le(rfcomm_pkt_buff,\
-		get_rfcomm_payload_offset(rfcomm_pkt_buff),\
+		get_rfcomm_msg_offset(rfcomm_pkt_buff),\
 		(read8_buff_le(rfcomm_pkt_buff,\
-			get_rfcomm_payload_offset(rfcomm_pkt_buff)) & ~CMD_RESP_MASK)))
+			get_rfcomm_msg_offset(rfcomm_pkt_buff)) & ~CMD_RESP_MASK)))
 
 #define get_rfcomm_msg_type_len(rfcomm_pkt_buff)	\
 	((read8_buff_le(rfcomm_pkt_buff,\
-			get_rfcomm_payload_offset(rfcomm_pkt_buff) + 1))>>1)
+			get_rfcomm_msg_offset(rfcomm_pkt_buff) + 1))>>1)
 
 #define get_rfcomm_msg_type_lsb(rfcomm_pkt_buff) \
 	(read8_buff_le(rfcomm_pkt_buff,\
-		get_rfcomm_payload_offset(rfcomm_pkt_buff))
+		get_rfcomm_msg_offset(rfcomm_pkt_buff))
 
 #define get_rfcomm_msg_type_msb(rfcomm_pkt_buff)	\
 	(read8_buff_le(rfcomm_pkt_buff,\
-		get_rfcomm_payload_offset(rfcomm_pkt_buff) + 1 ))
+		get_rfcomm_msg_offset(rfcomm_pkt_buff) + 1 ))
 
 //TODO: Tentative. Have to check extension field to create the length.
 #define get_rfcomm_msg_payload_offset(rfcomm_pkt_buff)	\
-		(get_rfcomm_payload_offset(rfcomm_pkt_buff) + 2)
+		(get_rfcomm_msg_offset(rfcomm_pkt_buff) + 2)
 
 #define get_rfcomm_msg_payload_uih_param(rfcomm_pkt_buff,param_num)	\
 	(read8_buff_le(rfcomm_pkt_buff,\

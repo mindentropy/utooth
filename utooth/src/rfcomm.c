@@ -137,6 +137,7 @@ uint8_t get_rfcomm_len_size(uint8_t *rfcomm_pkt_buff) {
  * DM frame with the F-bit set to 1.
  */
 
+/*
 void create_sabm_pkt(uint8_t *rfcomm_pkt_buff) {
 	disable_ea_addr_field(rfcomm_pkt_buff);
 	
@@ -150,12 +151,14 @@ void create_sabm_pkt(uint8_t *rfcomm_pkt_buff) {
 	set_rfcomm_len_field_lsb(rfcomm_pkt_buff,0);
 	disable_rfcomm_len_ea(rfcomm_pkt_buff);
 	set_rfcomm_fcs(rfcomm_pkt_buff);
-}
+}*/
 
 /* 
  * Send UA (Unnumbered acknowledgement) packet to acknowledge the
  * receipt and acceptance of SABM and DISC commands
  */
+
+/*
 void create_ua_pkt(uint8_t chaddr,uint8_t *rfcomm_pkt_buff) {
 	disable_ea_addr_field(rfcomm_pkt_buff);
 
@@ -170,7 +173,7 @@ void create_ua_pkt(uint8_t chaddr,uint8_t *rfcomm_pkt_buff) {
 	disable_rfcomm_len_ea(rfcomm_pkt_buff);
 
 	set_rfcomm_fcs(rfcomm_pkt_buff);
-}
+}*/
 
 
 void create_uih_pkt(uint8_t *rfcomm_pkt_buff,
@@ -213,14 +216,26 @@ void create_msc_msg(uint8_t *rfcomm_pkt_buff,
 					uint8_t cmdresp,
 					uint8_t control_signal) {
 
+	
+	disable_rfcomm_msg_type_ea(rfcomm_pkt_buff);
 
-	if(cmdresp == MSG_CMD)
+	if(cmdresp == MSG_CMD) {
 		enable_rfcomm_msg_type_cr(rfcomm_pkt_buff);
-	else
+	}
+	else {
+		//Expecting the same control signals as the original packet.
 		disable_rfcomm_msg_type_cr(rfcomm_pkt_buff);
+	}
 
-	set_rfcomm_msg_msc_ctrl_sig(rfcomm_pkt_buff,control_signal);
+	set_rfcomm_msg_msc_ctrl_sig(rfcomm_pkt_buff,control_signal); 
 }
+
+void create_pn_msg(uint8_t *rfcomm_pkt_buff,
+				uint8_t cmdresp,
+				struct rfcomm_pn_msg_conf *pn_conf) {
+	
+}
+
 /*
 void create_pn_msg(uint8_t *msg_buff,
 				uint8_t cmdresp,
