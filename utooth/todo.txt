@@ -149,3 +149,20 @@ Modify the circular queue to discard byte chunks. **High Priority** --> Done. Te
 Peek function in the circular queue **High Priority** --> Done. Testing Pending.
 
 Documentation of functions pending.
+
+
+Inline packet processing in Queue (Zero Copy??)
+===============================================
+If I go ahead with using a circular queue for packet processing is there a way to eliminate
+hci and l2cap buffers and process the packets inline in the circular queue itself? Also to
+form a packet could we remove the need for separate buffers and use the existing packet 
+creation functions to create packets in the queue itself?
+
+For the circular queue buffer size I need to club the sizes of hci,l2cap and rfcomm.
+
+On the receive side can the packets be fragmented by the circular queue itself so that
+the Rx buffer can be reduced?
+
+A simple way to test it is using the HCI packet to create packets in the queue itself.
+
+Macros for adding data into the queue has to be implemented with wrap arounds.

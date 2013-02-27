@@ -212,8 +212,9 @@ process_l2cap_pkt(uint16_t conn_handle,
 		case CHID_SIGNALING_CHANNEL: //C - Frame
 			//halUsbSendStr("Signaling channel\n");
 			// Read code.
-			sprintf(tmpbuff,"cmdcode:%x\n",cmdcode = get_l2cap_cmd_code(l2cap_pkt_buff));
-			halUsbSendStr(tmpbuff);
+			cmdcode = get_l2cap_cmd_code(l2cap_pkt_buff);
+			/*sprintf(tmpbuff,"cmdcode:%x\n",cmdcode);
+			halUsbSendStr(tmpbuff);*/
 			switch(cmdcode) {  //Read command code.
 				case SIG_COMMAND_REJECT:
 					cmdid = get_l2cap_cmd_id(l2cap_pkt_buff);
@@ -535,7 +536,7 @@ process_l2cap_pkt(uint16_t conn_handle,
 /*
  * 	I am not supporting extended features.
  * 	Connectionless mtu is supported. Sending the size of the connection 
- * 	less mtu size I am supporting.
+ * 	less mtu size is supported.
  */
 					if(infotype == EXTENDED_FEATURES_SUPPORTED) {
 						set_l2cap_signal_cmd_info_resp_result(l2cap_pkt_buff,
@@ -639,8 +640,8 @@ process_l2cap_pkt(uint16_t conn_handle,
 							if(verify_fcs(tmp,FCS_SIZE_SABM,get_rfcomm_fcs(tmp)) == FCS_FAIL) 
 								halUsbSendStr("FCS not ok\n");
 
-							sprintf(tmpbuff,"chaddr:%x\n",get_rfcomm_server_ch_addr(tmp));
-							halUsbSendStr(tmpbuff);
+				/*			sprintf(tmpbuff,"chaddr:%x\n",get_rfcomm_server_ch_addr(tmp));
+							halUsbSendStr(tmpbuff);*/
 
 							//Send UA
 							create_ua_pkt(get_rfcomm_server_ch_addr(tmp),tmp);
@@ -799,7 +800,7 @@ process_l2cap_pkt(uint16_t conn_handle,
 
 								switch(get_rfcomm_msg_type(tmp)) {
 									case PN:
-										halUsbSendStr("PN\n");
+										halUsbSendStr(">PN\n");
 
 										for(i = 0;i<8;i++) {
 											(conn->l2cap_info).rfcomm_conf_opt.config[i] = 
@@ -841,15 +842,15 @@ process_l2cap_pkt(uint16_t conn_handle,
 										halUsbSendStr("FCoff\n");
 										break;
 									case MSC:
-										halUsbSendStr("MSC\n");
+										//halUsbSendStr(">MSC\n");
 
 										if(get_rfcomm_msg_type_cr(tmp) == MSG_RESP) {
-											halUsbSendStr("Resp msg\n");
+											halUsbSendStr(">MSC Resp\n");
 											return;
 										}
 
 										if(get_rfcomm_msg_type_cr(tmp) == MSG_CMD){
-											halUsbSendStr("CMD msg\n");
+											halUsbSendStr(">MSC cmd\n");
 										}
 
 										
@@ -869,10 +870,12 @@ process_l2cap_pkt(uint16_t conn_handle,
 
 										hci_send_data_chk(i,
 											l2cap_pkt_buff,
-											get_l2cap_bframe_size(l2cap_pkt_buff));
+											get_l2cap_bframe_size(l2cap_pkt_buff)
+											);
 										
-										//TODO:Create an MSC pkt with the encapsulating UIH pkt.
-										create_msc_pkt(tmp,
+										//TODO:Create an MSC msg with the encapsulating UIH pkt.
+										/*
+										create_msc_msg(tmp,
 											get_rfcomm_server_ch_addr(tmp),
 											get_rfcomm_payload_len(tmp),
 											0,
@@ -881,17 +884,33 @@ process_l2cap_pkt(uint16_t conn_handle,
 											| MSC_CTRL_SIG_RTC_MASK
 											| MSC_CTRL_SIG_RTR_MASK
 											| MSC_CTRL_SIG_DV_MASK));
+										*/
 
+										create_msc_msg(tmp,
+											MSG_CMD,
+											(MSC_CTRL_SIG_EA_MASK
+											| MSC_CTRL_SIG_RTC_MASK
+											| MSC_CTRL_SIG_RTR_MASK
+											| MSC_CTRL_SIG_DV_MASK));
+
+										create_rfcomm_pkt(
+												tmp,
+												get_rfcomm_server_ch_addr(tmp),
+												get_rfcomm_payload_len(tmp),
+												POLL_FINAL_DISABLE,
+												MSG_CMD,
+												UIH
+												);
 										/*create_uih_pkt(tmp,
 											get_rfcomm_server_ch_addr(tmp),
 											get_rfcomm_payload_len(tmp),
 											0,
 											MSG_CMD);*/
 													
-										sprintf(tmpbuff,"signal: %x\n",
+										/*sprintf(tmpbuff,"signal: %x\n",
 											get_rfcomm_msg_msc_ctrl_sig_conf_pkt(tmp));
 
-										halUsbSendStr(tmpbuff);
+										halUsbSendStr(tmpbuff);*/
 													
 										create_l2cap_bframe_rfcomm_pkt(l2cap_pkt_buff,conn);
 
@@ -907,7 +926,7 @@ process_l2cap_pkt(uint16_t conn_handle,
 
 										break;
 									case RPN:
-										halUsbSendStr("RPN\n");
+										halUsbSendStr(">RPN\n");
 										
 										
 										set_rfcomm_msg_pm_lsb_conf_pkt(tmp,
@@ -938,13 +957,13 @@ process_l2cap_pkt(uint16_t conn_handle,
 												
 										break;
 									case TEST:
-										halUsbSendStr("TEST\n");
+										halUsbSendStr(">TEST\n");
 										sprintf(tmpbuff,"p/f:%x\n",get_control_field_poll_final_bit(tmp));
 										halUsbSendStr(tmpbuff);
 										//dump_rfcomm_pkt(tmp);
 										break;
 									case RLS:
-										halUsbSendStr("RLS\n");
+										halUsbSendStr(">RLS\n");
 										
 										if(get_rfcomm_msg_rls_oe_status(tmp)) 
 											halUsbSendStr("oe\n");
@@ -1292,9 +1311,11 @@ void rfcomm_connect_request(bdaddr_t bdaddr,uint16_t channel_id) {
 	if(conn_index == -1)
 		return;
 	
-	node = get_l2cap_conn_from_channel_id(conn_info,
-						conn_info[conn_index].connection_handle,
-						channel_id);
+	node = get_l2cap_conn_from_channel_id(
+					conn_info,
+					conn_info[conn_index].connection_handle,
+					channel_id
+					);
 	
 	sprintf(tmpbuff,"chid: %u\n",channel_id);
 	halUsbSendStr(tmpbuff);

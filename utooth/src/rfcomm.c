@@ -209,47 +209,34 @@ void create_uih_pkt(uint8_t *rfcomm_pkt_buff,
 }
 
 
-void create_msc_pkt(uint8_t *rfcomm_pkt_buff,
-					uint8_t chaddr,
-					uint16_t len,
-					uint8_t pfbit,
+void create_msc_msg(uint8_t *rfcomm_pkt_buff,
 					uint8_t cmdresp,
 					uint8_t control_signal) {
 
-	disable_ea_addr_field(rfcomm_pkt_buff);
-	
-	if(cmdresp == MSG_CMD)
-		enable_cr_addr_field(rfcomm_pkt_buff);
-	else
-		disable_cr_addr_field(rfcomm_pkt_buff);
-
-	disable_dir_addr_field(rfcomm_pkt_buff);
-	set_rfcomm_server_channel(rfcomm_pkt_buff,chaddr);
-
-	set_rfcomm_ctrl_field(rfcomm_pkt_buff,UIH);
-
-	if(pfbit)
-		set_rfcomm_poll_final_bit(rfcomm_pkt_buff);
-	else
-		clear_rfcomm_poll_final_bit(rfcomm_pkt_buff);
-
-	
-	set_rfcomm_len_field_lsb(rfcomm_pkt_buff,len);
-	disable_rfcomm_len_ea(rfcomm_pkt_buff);
 
 	if(cmdresp == MSG_CMD)
 		enable_rfcomm_msg_type_cr(rfcomm_pkt_buff);
 	else
 		disable_rfcomm_msg_type_cr(rfcomm_pkt_buff);
 
-
 	set_rfcomm_msg_msc_ctrl_sig(rfcomm_pkt_buff,control_signal);
-	set_rfcomm_fcs(rfcomm_pkt_buff);
 }
+/*
+void create_pn_msg(uint8_t *msg_buff,
+				uint8_t cmdresp,
+				struct rfcomm_pn_msg_conf *pnmsgconf) {
 
+	disable_ea_addr_field(msb_buff);
+	
+	if(cmdresp == MSG_CMD)
+		enable_cr_addr_field(msg_buff);
+	else
+		disable_cr_addr_field(msb_buff);
+
+}*/
 
 /*TODO: Last modified here. CHECK!!!!! */
-void create_rpn_pkt(uint8_t *rfcomm_pkt_buff,
+void create_rpn_msg(uint8_t *rfcomm_pkt_buff,
 					uint8_t chaddr,
 					uint16_t len,
 					uint8_t pfbit,
@@ -287,6 +274,8 @@ void create_rpn_pkt(uint8_t *rfcomm_pkt_buff,
 	set_rfcomm_fcs(rfcomm_pkt_buff);
 	
 }
+
+
 
 void set_rfcomm_fcs(uint8_t *rfcomm_pkt_buff) {
 
@@ -352,7 +341,62 @@ uint8_t get_rfcomm_pkt_size(uint8_t *rfcomm_pkt_buff) {
 	}
 }
 
+/* 				 Address Field 				*/
 
+/*
+ *  +-------+----+-----+---+----+----+----+----+-----+
+ *  |Bit No.| 1  |  2  | 3 | 4  |  5 |  6 |  7 |  8  |
+ *  +-------+----+-----+---+----+----+----+----+-----+
+ *  |RFCOMM | EA | C/R | D |   Server Channel        |
+ *  +-------+----+-----+---+-------------------------+
+ *
+ */
+
+/*
+	 						RFCOMM PACKET FORMAT 
+ 							====================
+	+------------+--------------+-------------+------------+-------------+
+	|   Address  |  Control     | Length Ind  |    Info    |     FCS     |
+	+------------+--------------+-------------+------------+-------------+
+	|  1 octet   |  1 octet     |1 or 2 octets| Unspecified| 1 octet     |
+	+------------+--------------+-------------+------------+-------------+
+
+*/
+void create_rfcomm_pkt(
+					uint8_t *rfcomm_pkt_buff,
+					uint8_t chaddr,
+					uint16_t len,
+					uint8_t pfbit,
+					uint8_t cmdresp,
+					RFCOMM_FRAME_TYPE rfcomm_frame_type) {
+	
+	/*      Address fields     */
+	disable_ea_addr_field(rfcomm_pkt_buff);
+	
+	if(cmdresp == MSG_CMD)
+		enable_cr_addr_field(rfcomm_pkt_buff);
+	else
+		disable_cr_addr_field(rfcomm_pkt_buff);
+
+	disable_dir_addr_field(rfcomm_pkt_buff);
+	set_rfcomm_server_channel(rfcomm_pkt_buff,chaddr);
+
+	/*      Control fields     */
+	set_rfcomm_ctrl_field(rfcomm_pkt_buff,rfcomm_frame_type);
+
+	if(pfbit)
+		set_rfcomm_poll_final_bit(rfcomm_pkt_buff);
+	else
+		clear_rfcomm_poll_final_bit(rfcomm_pkt_buff);
+
+	
+	/*      Length fields     */
+	set_rfcomm_len_field_lsb(rfcomm_pkt_buff,len);
+	disable_rfcomm_len_ea(rfcomm_pkt_buff);
+
+	/*      	FCS			  */
+	set_rfcomm_fcs(rfcomm_pkt_buff);
+}
 
 
 void process_rfcomm_pkt(

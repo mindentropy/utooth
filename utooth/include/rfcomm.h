@@ -61,7 +61,15 @@ typedef enum param_offset_conf {
 	CREDITS_ISSUED_OFFSET,
 } PARAM_OFFSET_CONF;
 
-
+struct rfcomm_pn_msg_conf {
+	uint8_t dbit;
+	uint8_t ibit;
+	uint8_t pbit;
+	uint8_t tbit;
+	uint8_t nbit;
+	uint8_t nabit;
+	uint8_t kbit;
+};
 
 #define MSC_ADDRESS_FIELD_OFFSET	0
 #define MSC_CONTROL_SIGNAL_OFFSET	1
@@ -131,6 +139,9 @@ typedef enum rls_param_offset {
 
 #define SERVER_CH_ADDR_MASK	(0xF8)
 #define POLL_FINAL_MASK		(1<<4)
+
+#define POLL_FINAL_ENABLE	1
+#define POLL_FINAL_DISABLE	0
 
 #define CTRL_MASK			(0xEF)
 
@@ -365,18 +376,20 @@ typedef enum rls_param_offset {
 		get_rfcomm_payload_offset(rfcomm_pkt_buff),\
 		(get_rfcomm_payload_len(rfcomm_pkt_buff)))
 
+#define get_rfcomm_msg_offset(rfcomm_pkt_buff)	\
+		(get_rfcomm_payload_offset(rfcomm_pkt_buff))
+
 #define get_rfcomm_msg_type(rfcomm_pkt_buff)	\
 	((read8_buff_le(rfcomm_pkt_buff,\
-		get_rfcomm_payload_offset(rfcomm_pkt_buff) + \
-		get_control_field_poll_final_bit(rfcomm_pkt_buff))) & (MSG_MASK))
+		get_rfcomm_msg_offset(rfcomm_pkt_buff))) & (MSG_MASK))
 
 #define get_rfcomm_msg_type_ea(rfcomm_pkt_buff) \
 	(read8_buff_le(rfcomm_pkt_buff,\
-		get_rfcomm_payload_offset(rfcomm_pkt_buff)) & EA_ADDR_LEN_MASK)
+		get_rfcomm_msg_offset(rfcomm_pkt_buff)) & (EA_ADDR_LEN_MASK))
 
 #define get_rfcomm_msg_type_cr(rfcomm_pkt_buff) \
-	(read8_buff_le(rfcomm_pkt_buff,\
-		get_rfcomm_payload_offset(rfcomm_pkt_buff)) & CMD_RESP_MASK) >> 1
+	((read8_buff_le(rfcomm_pkt_buff,\
+		get_rfcomm_payload_offset(rfcomm_pkt_buff)) & CMD_RESP_MASK) >> 1)
 
 #define enable_rfcomm_msg_type_cr(rfcomm_pkt_buff) \
 	(write8_buff_le(rfcomm_pkt_buff,\
@@ -815,12 +828,20 @@ void create_credit_pkt(uint8_t *rfcomm_pkt_buff,
 					uint8_t credits
 					);
 
-void create_msc_pkt(uint8_t *rfcomm_pkt_buff,
+void create_msc_msg(
+					uint8_t *rfcomm_pkt_buff,
+					uint8_t cmdresp,
+					uint8_t control_signal
+					);
+
+void create_rfcomm_pkt(
+					uint8_t *rfcomm_pkt_buff,
 					uint8_t chaddr,
 					uint16_t len,
 					uint8_t pfbit,
 					uint8_t cmdresp,
-					uint8_t control_signal);
+					RFCOMM_FRAME_TYPE rfcomm_frame_type
+					);
 
 void set_rfcomm_fcs(uint8_t *rfcomm_pkt_buff);
 

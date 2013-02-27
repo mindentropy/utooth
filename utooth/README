@@ -342,6 +342,7 @@ if(cq_used_size(&rx_q) >= readblksize) {
 
 Due to this no message was on the terminal. Since there was no draining of the Rx buffer 
 from the CC256x module the module pulls up the CTS sometimes. Due to not draining of the
-Rx buffer there would be no message sent thereby not filling any data structures with useful
-data.
+Rx buffer there would be no messages sent thereby not filling any data structures with useful
+data. The bug was identified by printing the readblksize and a proper use case is to check
+the readblk size of the bluetooth name which should contain a payload of 255 characters.
 
