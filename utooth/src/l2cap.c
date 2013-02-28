@@ -665,7 +665,7 @@ process_l2cap_pkt(uint16_t conn_handle,
 								get_l2cap_bframe_size(l2cap_pkt_buff));
 
 							break;
-						case UA:
+						case UA: //Got UA from a SABM.
 							halUsbSendStr(">UA\n");
 							if(verify_fcs(tmp,FCS_SIZE_UA,get_rfcomm_fcs(tmp)) == FCS_FAIL) 
 								halUsbSendStr("FCS not ok\n");
@@ -1124,8 +1124,9 @@ void l2cap_connect_request(bdaddr_t bdaddr,
 
 	(data->l2cap_info).l2cap_state = WAIT_CONNECT_RSP;
 	tmp_chid = data->channel_id = gen_l2cap_channel_id();
-	(data->l2cap_info).connect_initiate = LOCAL;
-	
+//	(data->l2cap_info).connect_initiate = LOCAL;
+//	(data->l2cap_info).
+
 	set_l2cap_len(l2cap_pkt_buff,CTRL_SIG_HEADER_SIZE + payload);
 	set_l2cap_channel_id(l2cap_pkt_buff,CHID_SIGNALING_CHANNEL);
 

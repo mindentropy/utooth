@@ -14,8 +14,8 @@ typedef enum rfcomm_frame_type {
 	SABM = 0x2F, //Set Asynchronous balanced mode.
 	UA   = 0x63, //Unnumbered Acknowledgement
 	DM   = 0x0F, //Disconnected mode response.
-	DISC = 0x43, //
-	UIH  = 0xEF
+	DISC = 0x43, //Disconnect command.
+	UIH  = 0xEF	 //Unnumbered information with header check.
 } RFCOMM_FRAME_TYPE;
 
 typedef enum rfcomm_frame_msg_type {
@@ -51,6 +51,18 @@ typedef enum cl_conf {
 	CL_TYPE4
 } CL_CONF;
 
+
+typedef enum rfcomm_state {
+	RFCOMM_CONNECT,
+	RFCOMM_CONNECTED,
+	RFCOMM_DICONNECT,
+	RFCOMM_DISCONNECTED
+} RFCOMM_STATE;
+
+typedef enum rfcomm_state_transition {
+	RFCOMM_ACTIVE,
+	RFCOMM_IDLE
+} RFCOMM_STATE_TRANSITION;
 
 typedef enum param_offset_conf {
 	DLCI_OFFSET,

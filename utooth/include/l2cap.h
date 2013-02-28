@@ -663,7 +663,7 @@ struct l2cap_info {
 
 	struct config_options conf_opt;
 	struct rfcomm_config_options rfcomm_conf_opt;
-
+	
 	PSM_TYPE psm_type;
 
 };
