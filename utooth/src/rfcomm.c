@@ -230,6 +230,36 @@ void create_msc_msg(uint8_t *rfcomm_pkt_buff,
 	set_rfcomm_msg_msc_ctrl_sig(rfcomm_pkt_buff,control_signal); 
 }
 
+
+void create_pn_msg(
+				uint8_t *rfcomm_pkt_buff,
+				uint8_t cmdresp,
+				uint8_t *config
+				) {
+
+	disable_rfcomm_msg_type_ea(rfcomm_pkt_buff);
+	
+
+	if(cmdresp == MSG_CMD) {
+		enable_rfcomm_msg_type_cr(rfcomm_pkt_buff);
+	}
+	else {
+		//Expecting the same control signals as the original packet.
+		disable_rfcomm_msg_type_cr(rfcomm_pkt_buff);
+	}
+
+	set_rfcomm_msg_dlci_conf_pkt(rfcomm_pkt_buff,20);
+	set_rfcomm_msg_uih_frame_conf_pkt(rfcomm_pkt_buff,0);
+	set_rfcomm_msg_credit_conf_pkt(rfcomm_pkt_buff,0x15);
+	set_rfcomm_msg_priority_conf_pkt(rfcomm_pkt_buff,7);
+
+	//ack timer set to 0.
+	set_rfcomm_msg_max_frame_size_conf_pkt(rfcomm_pkt_buff,336);
+	set_rfcomm_msg_max_frame_retrans_conf_pkt(rfcomm_pkt_buff,0);
+	set_rfcomm_msg_credits_issued_conf_pkt(rfcomm_pkt_buff,7);
+	
+}
+
 /*
 void create_pn_msg(uint8_t *rfcomm_pkt_buff,
 				uint8_t cmdresp,

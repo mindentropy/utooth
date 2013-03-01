@@ -33,8 +33,7 @@ typedef enum rfcomm_frame_msg_type {
 } RFCOMM_FRAME_MSG_TYPE;
 
 
-
-struct rfcomm_config_options {
+struct rfcomm_pn_config_options {
 	uint8_t config[8];
 };
 
@@ -56,15 +55,24 @@ typedef enum rfcomm_state {
 	RFCOMM_NONE,
 	RFCOMM_CONNECT,
 	RFCOMM_DICONNECT,
-	RFCOMM_PN_INITIATE,
-	RFCOMM_TEST_INITIATE,
-	RFCOMM_FCON_INTIATE,
-	RFCOMM_FCOFF_INITATE,
-	RFCOMM_MSC_INITIATE,
-	RFCOMM_NSC_INITIATE,
-	RFCOMM_RPN_INITIATE,
-	RFCOMM_RLS_INITIATE,
-	RFCOMM_SNC_INITIATE
+	RFCOMM_PN_REQUEST,
+	RFCOMM_PN_CONFIRM,
+	RFCOMM_TEST_REQUEST,
+	RFCOMM_TEST_CONFIRM,
+	RFCOMM_FCON_REQUEST,
+	RFCOMM_FCON_CONFIRM,
+	RFCOMM_FCOFF_REQUEST,
+	RFCOMM_FCOFF_CONFIRM,
+	RFCOMM_MSC_REQUEST,
+	RFCOMM_MSC_CONFIRM,
+	RFCOMM_NSC_REQUEST,
+	RFCOMM_NSC_CONFIRM,
+	RFCOMM_RPN_REQUEST,
+	RFCOMM_RPN_CONFIRM,
+	RFCOMM_RLS_REQUEST,
+	RFCOMM_RLS_CONFIRM,
+	RFCOMM_SNC_REQUEST,
+	RFCOMM_SNC_CONFIRM
 } RFCOMM_STATE;
 
 typedef enum rfcomm_state_transition {
@@ -74,11 +82,10 @@ typedef enum rfcomm_state_transition {
 
 
 struct rfcomm_info {
-	struct rfcomm_config_options rfcomm_conf_opt;
+	struct rfcomm_pn_config_options rfcomm_pn_conf_opt;
 	uint8_t dlci;
 	RFCOMM_STATE rfcomm_state;
 	RFCOMM_STATE_TRANSITION rfcomm_state_transition;
-
 };
 
 #define init_rfcomm_state(rfcomm_state)	\
@@ -100,16 +107,16 @@ struct rfcomm_info {
 #define get_rfcomm_transition(rfcomm_state)	\
 		rfcomm_state_transition
 
-typedef enum param_offset_conf {
-	DLCI_OFFSET,
+typedef enum pn_offset_conf {
+	DLCI_OFFSET = 0,
 	CL_AND_FRAME_OFFSET,
 	PRIORITY_OFFSET,
 	ACK_TIMER_OFFSET,
 	MAX_FRAME_SIZE_LSB_OFFSET,
 	MAX_FRAME_SIZE_MSB_OFFSET,
 	MAX_RETRANS_OFFSET,
-	CREDITS_ISSUED_OFFSET,
-} PARAM_OFFSET_CONF;
+	CREDITS_ISSUED_OFFSET
+} PN_OFFSET_CONF;
 
 
 #define MSC_ADDRESS_FIELD_OFFSET	0
@@ -529,6 +536,7 @@ typedef enum rls_param_offset {
 #define set_rfcomm_msg_max_frame_retrans_conf(config,retrans_size)	\
 			((config[MAX_RETRANS_OFFSET]) = (retrans_size))
 
+
 #define set_rfcomm_msg_credits_issued_conf(config,credits_issued)	\
 			((config[CREDITS_ISSUED_OFFSET]) = (credits_issued))
 
@@ -716,12 +724,13 @@ typedef enum rls_param_offset {
 
 #define set_rfcomm_msg_credits_issued_conf_pkt(rfcomm_pkt_buff,credits_issued)	\
 		(write8_buff_le(rfcomm_pkt_buff,\
-			(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff)+CREDITS_ISSUED_OFFSET),\
+			(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + CREDITS_ISSUED_OFFSET),\
 			(credits_issued)))
 
 #define get_rfcomm_msg_credits_issued_conf_pkt(rfcomm_pkt_buff)	\
 	(read8_buff_le(rfcomm_pkt_buff,\
 		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + CREDITS_ISSUED_OFFSET)))
+
 
 #define get_rfcomm_msg_rpn_dlci_conf_pkt(rfcomm_pkt_buff)	\
 	(read8_buff_le(rfcomm_pkt_buff,\

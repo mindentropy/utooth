@@ -694,10 +694,20 @@ process_l2cap_pkt(uint16_t conn_handle,
 							if((conn->l2cap_info).connect_initiate == LOCAL) {
 								set_rfcomm_state(
 									(conn->l2cap_info).rfcomm_info.rfcomm_state,
-									RFCOMM_PN_INITIATE);
+									RFCOMM_PN_REQUEST);
 								set_rfcomm_transition(
 									(conn->l2cap_info).rfcomm_info.rfcomm_state_transition,
 									RFCOMM_ACTIVE);
+
+								create_pn_msg(tmp,
+											MSG_CMD,
+											NULL);
+								create_rfcomm_pkt(tmp,
+										get_rfcomm_server_ch_addr(tmp),
+										0,
+										POLL_FINAL_ENABLE,
+										MSG_CMD,
+										UIH);
 							}
 
 							break;
@@ -847,11 +857,15 @@ process_l2cap_pkt(uint16_t conn_handle,
 										halUsbSendStr(">PN\n");
 
 										for(i = 0;i<8;i++) {
-											(conn->l2cap_info).rfcomm_info.rfcomm_conf_opt.config[i] = 
+											(conn->l2cap_info)
+													.rfcomm_info
+													.rfcomm_pn_conf_opt.config[i] = 
 													get_rfcomm_msg_payload_uih_param(tmp,i);
 										}
 										
-										if(is_valid_pn((conn->l2cap_info).rfcomm_info.rfcomm_conf_opt.config)) {
+										if(is_valid_pn((conn->l2cap_info)
+															.rfcomm_info
+															.rfcomm_pn_conf_opt.config)) {
 											//halUsbSendStr("valid pn\n");
 										}
 										
