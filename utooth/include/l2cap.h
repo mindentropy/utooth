@@ -662,8 +662,10 @@ struct l2cap_info {
 	void (*l2cap_pong_cb)(struct l2cap_info *l2cap_info,uint8_t argcnt,...);
 
 	struct config_options conf_opt;
-	struct rfcomm_config_options rfcomm_conf_opt;
+//	struct rfcomm_config_options rfcomm_conf_opt;
 	
+	struct rfcomm_info rfcomm_info;
+
 	PSM_TYPE psm_type;
 
 };

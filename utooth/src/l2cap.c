@@ -78,6 +78,7 @@ void l2cap_init() {
 
 	//l2cap_cur_cid = MIN_L2CAP_CID-1;
 	l2cap_cur_cid = MIN_L2CAP_CID;
+
 }
 
 
@@ -172,6 +173,11 @@ void process_connection_request(
 	(data->l2cap_info).l2cap_state = WAIT_CONNECT_RSP; 
 	(data->l2cap_info).dcid = dcid;
 	(data->l2cap_info).psm_type = psm;
+
+	init_rfcomm_state((data->l2cap_info).rfcomm_info.rfcomm_state);
+	init_rfcomm_transition((data->l2cap_info).
+							rfcomm_info.
+							rfcomm_state_transition);
 
 
 	return;
@@ -629,6 +635,12 @@ process_l2cap_pkt(uint16_t conn_handle,
 						case SABM:
 							halUsbSendStr(">SABM\n");
 
+							set_rfcomm_state(
+								(conn->l2cap_info).rfcomm_info.rfcomm_state,
+								RFCOMM_CONNECT);
+							set_rfcomm_transition(
+								(conn->l2cap_info).rfcomm_info.rfcomm_state_transition,
+								RFCOMM_ACTIVE);
 							/*
 							 *	The SABM command shall be used to place the addressed station 
 							 *	in the Asynchronous Balanced Mode (ABM) where all control fields 
@@ -645,7 +657,6 @@ process_l2cap_pkt(uint16_t conn_handle,
 							halUsbSendStr(tmpbuff);*/
 
 							//Send UA
-						//	create_ua_pkt(get_rfcomm_server_ch_addr(tmp),tmp);
 							create_rfcomm_pkt(tmp,
 									get_rfcomm_server_ch_addr(tmp),
 									0,
@@ -664,11 +675,30 @@ process_l2cap_pkt(uint16_t conn_handle,
 								l2cap_pkt_buff,
 								get_l2cap_bframe_size(l2cap_pkt_buff));
 
+							set_rfcomm_transition(
+								(conn->l2cap_info).rfcomm_info.rfcomm_state_transition,
+								RFCOMM_IDLE);
+
 							break;
 						case UA: //Got UA from a SABM.
 							halUsbSendStr(">UA\n");
 							if(verify_fcs(tmp,FCS_SIZE_UA,get_rfcomm_fcs(tmp)) == FCS_FAIL) 
 								halUsbSendStr("FCS not ok\n");
+
+							set_rfcomm_transition(
+								(conn->l2cap_info).rfcomm_info.rfcomm_state_transition,
+								RFCOMM_IDLE);
+							
+
+							/* Initiate a PN */
+							if((conn->l2cap_info).connect_initiate == LOCAL) {
+								set_rfcomm_state(
+									(conn->l2cap_info).rfcomm_info.rfcomm_state,
+									RFCOMM_PN_INITIATE);
+								set_rfcomm_transition(
+									(conn->l2cap_info).rfcomm_info.rfcomm_state_transition,
+									RFCOMM_ACTIVE);
+							}
 
 							break;
 						case DM:
@@ -817,11 +847,11 @@ process_l2cap_pkt(uint16_t conn_handle,
 										halUsbSendStr(">PN\n");
 
 										for(i = 0;i<8;i++) {
-											(conn->l2cap_info).rfcomm_conf_opt.config[i] = 
+											(conn->l2cap_info).rfcomm_info.rfcomm_conf_opt.config[i] = 
 													get_rfcomm_msg_payload_uih_param(tmp,i);
 										}
 										
-										if(is_valid_pn((conn->l2cap_info).rfcomm_conf_opt.config)) {
+										if(is_valid_pn((conn->l2cap_info).rfcomm_info.rfcomm_conf_opt.config)) {
 											//halUsbSendStr("valid pn\n");
 										}
 										
@@ -1124,8 +1154,9 @@ void l2cap_connect_request(bdaddr_t bdaddr,
 
 	(data->l2cap_info).l2cap_state = WAIT_CONNECT_RSP;
 	tmp_chid = data->channel_id = gen_l2cap_channel_id();
-//	(data->l2cap_info).connect_initiate = LOCAL;
-//	(data->l2cap_info).
+	(data->l2cap_info).connect_initiate = LOCAL;
+	init_rfcomm_state((data->l2cap_info).rfcomm_info.rfcomm_state);
+	init_rfcomm_transition((data->l2cap_info).rfcomm_info.rfcomm_state_transition);
 
 	set_l2cap_len(l2cap_pkt_buff,CTRL_SIG_HEADER_SIZE + payload);
 	set_l2cap_channel_id(l2cap_pkt_buff,CHID_SIGNALING_CHANNEL);

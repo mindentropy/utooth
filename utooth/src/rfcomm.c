@@ -230,11 +230,12 @@ void create_msc_msg(uint8_t *rfcomm_pkt_buff,
 	set_rfcomm_msg_msc_ctrl_sig(rfcomm_pkt_buff,control_signal); 
 }
 
+/*
 void create_pn_msg(uint8_t *rfcomm_pkt_buff,
 				uint8_t cmdresp,
 				struct rfcomm_pn_msg_conf *pn_conf) {
 	
-}
+}*/
 
 /*
 void create_pn_msg(uint8_t *msg_buff,

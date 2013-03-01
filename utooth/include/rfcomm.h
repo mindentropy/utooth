@@ -53,16 +53,52 @@ typedef enum cl_conf {
 
 
 typedef enum rfcomm_state {
+	RFCOMM_NONE,
 	RFCOMM_CONNECT,
-	RFCOMM_CONNECTED,
 	RFCOMM_DICONNECT,
-	RFCOMM_DISCONNECTED
+	RFCOMM_PN_INITIATE,
+	RFCOMM_TEST_INITIATE,
+	RFCOMM_FCON_INTIATE,
+	RFCOMM_FCOFF_INITATE,
+	RFCOMM_MSC_INITIATE,
+	RFCOMM_NSC_INITIATE,
+	RFCOMM_RPN_INITIATE,
+	RFCOMM_RLS_INITIATE,
+	RFCOMM_SNC_INITIATE
 } RFCOMM_STATE;
 
 typedef enum rfcomm_state_transition {
 	RFCOMM_ACTIVE,
 	RFCOMM_IDLE
 } RFCOMM_STATE_TRANSITION;
+
+
+struct rfcomm_info {
+	struct rfcomm_config_options rfcomm_conf_opt;
+	uint8_t dlci;
+	RFCOMM_STATE rfcomm_state;
+	RFCOMM_STATE_TRANSITION rfcomm_state_transition;
+
+};
+
+#define init_rfcomm_state(rfcomm_state)	\
+		rfcomm_state = RFCOMM_NONE
+
+#define init_rfcomm_transition(rfcomm_state) \
+		rfcomm_state = RFCOMM_IDLE
+
+#define set_rfcomm_state(rfcomm_state,state)	\
+		rfcomm_state = state
+
+#define set_rfcomm_transition(rfcomm_transition,transition)	\
+		rfcomm_transition = transition
+
+#define get_rfcomm_state(rfcomm_state)	\
+		rfcomm_state
+	
+
+#define get_rfcomm_transition(rfcomm_state)	\
+		rfcomm_state_transition
 
 typedef enum param_offset_conf {
 	DLCI_OFFSET,
