@@ -439,6 +439,11 @@ typedef enum rls_param_offset {
 	((read8_buff_le(rfcomm_pkt_buff,\
 		get_rfcomm_msg_offset(rfcomm_pkt_buff)) & CMD_RESP_MASK) >> 1)
 
+#define set_rfcomm_msg_type(rfcomm_pkt_buff,msg_type)	\
+	(write8_buff_le(rfcomm_pkt_buff,\
+		get_rfcomm_msg_offset(rfcomm_pkt_buff),\
+		((get_rfcomm_msg_type(rfcomm_pkt_buff) \
+		& (EA_ADDR_LEN_MASK|CMD_RESP_MASK)) | msg_type)))
 
 /* EA Mods */
 //EA Field is set to 1 for disable.
@@ -466,9 +471,29 @@ typedef enum rls_param_offset {
 		(read8_buff_le(rfcomm_pkt_buff,\
 			get_rfcomm_msg_offset(rfcomm_pkt_buff)) & ~CMD_RESP_MASK)))
 
+#define disable_rfcomm_msg_type_len_ea(rfcomm_pkt_buff)	\
+	(write8_buff_le(rfcomm_pkt_buff,\
+		get_rfcomm_msg_offset(rfcomm_pkt_buff) + 1,\
+		(read8_buff_le(rfcomm_pkt_buff,\
+			get_rfcomm_msg_offset(rfcomm_pkt_buff) + 1) | EA_ADDR_LEN_MASK)))
+
 #define get_rfcomm_msg_type_len(rfcomm_pkt_buff)	\
 	((read8_buff_le(rfcomm_pkt_buff,\
 			get_rfcomm_msg_offset(rfcomm_pkt_buff) + 1))>>1)
+
+/*
+#define set_rfcomm_msg_type_len(rfcomm_pkt_buff,len)	\
+	(write8_buff_le(rfcomm_pkt_buff,\
+		get_rfcomm_msg_offset(rfcomm_pkt_buff) + 1,\
+		len<<1))*/
+			
+#define set_rfcomm_msg_type_len(rfcomm_pkt_buff,len)	\
+	(write8_buff_le(rfcomm_pkt_buff,\
+		get_rfcomm_msg_offset(rfcomm_pkt_buff) + 1,\
+		(read8_buff_le(rfcomm_pkt_buff,\
+		get_rfcomm_msg_offset(rfcomm_pkt_buff + 1)) \
+								& EA_ADDR_LEN_MASK) \
+								| (len<<1)))
 
 #define get_rfcomm_msg_type_lsb(rfcomm_pkt_buff) \
 	(read8_buff_le(rfcomm_pkt_buff,\
@@ -559,6 +584,7 @@ typedef enum rls_param_offset {
 #define get_rfcomm_msg_credit_conf_pkt(rfcomm_pkt_buff)	\
 		((read8_buff_le(rfcomm_pkt_buff,\
 			(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + CL_AND_FRAME_OFFSET)) & 0xF0) >> 4)
+
 
 #define get_rfcomm_msg_priority_conf_pkt(rfcomm_pkt_buff)	\
 		(read8_buff_le(rfcomm_pkt_buff,\
@@ -667,9 +693,9 @@ typedef enum rls_param_offset {
 */
 
 #define set_rfcomm_msg_dlci_conf_pkt(rfcomm_pkt_buff,dlci)	\
-		(write8_buff_le(rfcomm_pkt_buff,\
-			(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff)+DLCI_OFFSET),\
-			dlci))
+	(write8_buff_le(rfcomm_pkt_buff,\
+		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + DLCI_OFFSET),\
+		dlci))
 
 #define set_rfcomm_msg_uih_credit_frame_conf_pkt(rfcomm_pkt_buff,uih_credit)	\
 		(write8_buff_le(rfcomm_pkt_buff,\
@@ -679,9 +705,8 @@ typedef enum rls_param_offset {
 #define set_rfcomm_msg_uih_frame_conf_pkt(rfcomm_pkt_buff,uih)	\
 		(write8_buff_le(rfcomm_pkt_buff,\
 			(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff)+CL_AND_FRAME_OFFSET),\
-			(read8_buff_le(rfcomm_pkt_buff,\
-				get_rfcomm_msg_payload_offset(rfcomm_pkt_buff)+CL_AND_FRAME_OFFSET) & 0xF0)|\
-												uih))
+			((read8_buff_le(rfcomm_pkt_buff,\
+			get_rfcomm_msg_payload_offset(rfcomm_pkt_buff)+CL_AND_FRAME_OFFSET) & 0xF0)|uih)))
 
 #define set_rfcomm_msg_credit_conf_pkt(rfcomm_pkt_buff,credit)	\
 		(write8_buff_le(rfcomm_pkt_buff,\

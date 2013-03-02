@@ -237,8 +237,8 @@ void create_pn_msg(
 				uint8_t *config
 				) {
 
+	set_rfcomm_msg_type(rfcomm_pkt_buff,PN);
 	disable_rfcomm_msg_type_ea(rfcomm_pkt_buff);
-	
 
 	if(cmdresp == MSG_CMD) {
 		enable_rfcomm_msg_type_cr(rfcomm_pkt_buff);
@@ -247,10 +247,13 @@ void create_pn_msg(
 		//Expecting the same control signals as the original packet.
 		disable_rfcomm_msg_type_cr(rfcomm_pkt_buff);
 	}
+	
+	disable_rfcomm_msg_type_len_ea(rfcomm_pkt_buff);
+	set_rfcomm_msg_type_len(rfcomm_pkt_buff,8);
 
 	set_rfcomm_msg_dlci_conf_pkt(rfcomm_pkt_buff,20);
 	set_rfcomm_msg_uih_frame_conf_pkt(rfcomm_pkt_buff,0);
-	set_rfcomm_msg_credit_conf_pkt(rfcomm_pkt_buff,0x15);
+	set_rfcomm_msg_credit_conf_pkt(rfcomm_pkt_buff,0xF);
 	set_rfcomm_msg_priority_conf_pkt(rfcomm_pkt_buff,7);
 
 	//ack timer set to 0.

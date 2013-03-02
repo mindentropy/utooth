@@ -689,9 +689,10 @@ process_l2cap_pkt(uint16_t conn_handle,
 								(conn->l2cap_info).rfcomm_info.rfcomm_state_transition,
 								RFCOMM_IDLE);
 							
-
+							halUsbSendStr("before pn\n");
 							/* Initiate a PN */
 							if((conn->l2cap_info).connect_initiate == LOCAL) {
+								halUsbSendStr("<PN\n");
 								set_rfcomm_state(
 									(conn->l2cap_info).rfcomm_info.rfcomm_state,
 									RFCOMM_PN_REQUEST);
@@ -702,12 +703,25 @@ process_l2cap_pkt(uint16_t conn_handle,
 								create_pn_msg(tmp,
 											MSG_CMD,
 											NULL);
+
 								create_rfcomm_pkt(tmp,
 										get_rfcomm_server_ch_addr(tmp),
-										0,
-										POLL_FINAL_ENABLE,
+										10,
+										POLL_FINAL_DISABLE,
 										MSG_CMD,
 										UIH);
+
+								create_l2cap_bframe_rfcomm_pkt(l2cap_pkt_buff,conn);
+
+								send_hci_acl_header(get_acl_conn_handle(conn_handle),
+												PB_FIRST_AUTO_FLUSH_PKT,
+												H2C_NO_BROADCAST,
+												get_l2cap_bframe_size(l2cap_pkt_buff));
+	
+								hci_send_data_chk(i,
+									l2cap_pkt_buff,
+									get_l2cap_bframe_size(l2cap_pkt_buff));
+	
 							}
 
 							break;
@@ -770,7 +784,7 @@ process_l2cap_pkt(uint16_t conn_handle,
 
 							break;
 						case UIH:
-							//halUsbSendStr(">UIH\n");
+							halUsbSendStr(">UIH\n");
 
 							/* For UIH calculate FCS on address and control fields only */
 							if(verify_fcs(tmp,FCS_SIZE_UIH,get_rfcomm_fcs(tmp)) == FCS_FAIL) 
@@ -855,12 +869,32 @@ process_l2cap_pkt(uint16_t conn_handle,
 								switch(get_rfcomm_msg_type(tmp)) {
 									case PN:
 										halUsbSendStr(">PN\n");
+									   /*
+										* In the PN request sent prior to a DLC establishment, this field must contain the
+										* value 15 (0xF), indicating support of credit based flow control in the sender.
+										* See Table 5.3 below. If the PN response contains any other value than 14
+										* (0xE) in this field, it is inferred that the peer RFCOMM entity is not supporting
+										* the credit based flow control feature. (This is only possible if the peer
+										* RFCOMM implementation is only conforming to Bluetooth version 1.0B.) If a
+										* PN request is sent on an already open DLC, then this field must contain the
+										* value zero; it is not possible to “set initial credits” more than once per DLC acti-
+										* vation.
+										*/
+										
+										if(get_rfcomm_msg_credit_conf_pkt(tmp) == 0xF) {
+											halUsbSendStr("pn resp\n");
+
+											set_rfcomm_transition(
+												(conn->l2cap_info).rfcomm_info.rfcomm_state_transition,
+												RFCOMM_IDLE);
+											return;
+										}
 
 										for(i = 0;i<8;i++) {
 											(conn->l2cap_info)
-													.rfcomm_info
-													.rfcomm_pn_conf_opt.config[i] = 
-													get_rfcomm_msg_payload_uih_param(tmp,i);
+												.rfcomm_info
+												.rfcomm_pn_conf_opt.config[i] = 
+												get_rfcomm_msg_payload_uih_param(tmp,i);
 										}
 										
 										if(is_valid_pn((conn->l2cap_info)
@@ -1037,19 +1071,24 @@ process_l2cap_pkt(uint16_t conn_handle,
 
 										break;
 									default:
-	
+										halUsbSendStr("msg default\n");
 										break;
-								}
-							}
+								} //End of msg switch
+							} //End of if dlci 
+							break; //UIH end.
+						default:
+							halUsbSendStr("control default\n");
 							break;
-					}
+					} //End of control field.
+					break;  //PSM RFCOMM break.
+				default: //PSM default.
+					tmp = get_l2cap_bframe_payload_buff(l2cap_pkt_buff);
+					sprintf(tmpbuff,"ctrl:%x\n",get_rfcomm_control_field(tmp));
+					halUsbSendStr(tmpbuff);
 					break;
-				default:
-					break;
-			}
-
+			} //End of psm switch
 			break;
-	}
+	} //End of channel id.
 }
 
 void send_conn_oriented_l2cap_pkt(
@@ -1140,7 +1179,7 @@ void l2cap_ping(bdaddr_t bdaddr,
 NOTE:
 ----
 	Connection handle is used to represent the connection between 2 devices. A single
-	connection handle can have multiple channel ids at the source representing different
+	*connection handle can have multiple channel ids at the source representing different
 	channel endpoints.
 */
 void l2cap_connect_request(bdaddr_t bdaddr,
@@ -1168,7 +1207,12 @@ void l2cap_connect_request(bdaddr_t bdaddr,
 
 	(data->l2cap_info).l2cap_state = WAIT_CONNECT_RSP;
 	tmp_chid = data->channel_id = gen_l2cap_channel_id();
+
+	halUsbSendStr("Setting local\n");
 	(data->l2cap_info).connect_initiate = LOCAL;
+
+	(data->l2cap_info).psm_type = psm_type;
+
 	init_rfcomm_state((data->l2cap_info).rfcomm_info.rfcomm_state);
 	init_rfcomm_transition((data->l2cap_info).rfcomm_info.rfcomm_state_transition);
 
@@ -1377,9 +1421,6 @@ void rfcomm_connect_request(bdaddr_t bdaddr,uint16_t channel_id) {
 					conn_info[conn_index].connection_handle,
 					channel_id
 					);
-	
-	sprintf(tmpbuff,"chid: %u\n",channel_id);
-	halUsbSendStr(tmpbuff);
 
 	if(node == NULL) 
 		return;
@@ -1388,6 +1429,7 @@ void rfcomm_connect_request(bdaddr_t bdaddr,uint16_t channel_id) {
 			get_l2cap_bframe_payload_buff(l2cap_pkt_buff)
 		);*/
 
+	halUsbSendStr("<SABM\n");
 	create_rfcomm_pkt(
 		get_l2cap_bframe_payload_buff(l2cap_pkt_buff),
 		RFCOMM_SABM_ADDR,
