@@ -33,8 +33,10 @@ typedef enum rfcomm_frame_msg_type {
 } RFCOMM_FRAME_MSG_TYPE;
 
 
-struct rfcomm_pn_config_options {
-	uint8_t config[8];
+struct rfcomm_config_options {
+	uint8_t pn_config[8];
+	uint8_t rpn_config[8];
+	uint8_t msc_config[3];
 };
 
 typedef enum i_conf {
@@ -50,6 +52,13 @@ typedef enum cl_conf {
 	CL_TYPE4
 } CL_CONF;
 
+
+typedef enum parity_type {
+	ODD_PARITY,
+	EVEN_PARITY,
+	MARK_PARITY,
+	SPACE_PARITY
+} PARITY_TYPE;
 
 typedef enum rfcomm_state {
 	RFCOMM_NONE,
@@ -82,7 +91,7 @@ typedef enum rfcomm_state_transition {
 
 
 struct rfcomm_info {
-	struct rfcomm_pn_config_options rfcomm_pn_conf_opt;
+	struct rfcomm_config_options rfcomm_conf_opt;
 	uint8_t dlci;
 	RFCOMM_STATE rfcomm_state;
 	RFCOMM_STATE_TRANSITION rfcomm_state_transition;
@@ -134,6 +143,26 @@ typedef enum rpn_param_offset {
 	RPN_PM_FIELD_LSB_OFFSET,
 	RPN_PM_FIELD_MSB_OFFSET
 } RPN_PARAM_OFFSET;
+
+
+typedef enum baud_rate {
+	B2400,
+	B4800,
+	B7200,
+	B9600,
+	B19200,
+	B38400,
+	B57600,
+	B115200,
+	B230400
+} BAUD_RATE;
+
+typedef enum data_bits {
+	BITS5,
+	BITS6,
+	BITS7,
+	BITS8
+} DATA_BITS;
 
 typedef enum rls_param_offset {
 	RLS_OFFSET
@@ -224,12 +253,15 @@ typedef enum rls_param_offset {
 #define RPN_PARITY_TYPE_MASK	((0x03) << 4)
 #define RPN_FC_MASK				(0x3F)
 
-#define RPN_XI_MASK		(1<<0)
-#define RPN_XO_MASK		(1<<1)
-#define RPN_RTRI_MASK	(1<<2)
-#define RPN_RTRO_MASK	(1<<3)
-#define RPN_RTCI_MASK	(1<<4)
-#define RPN_RTCO_MASK	(1<<5)
+
+typedef enum rpn_flow_control {
+	RPN_XI_MASK		= (1<<0),
+	RPN_XO_MASK		= (1<<1),
+	RPN_RTRI_MASK	= (1<<2),
+	RPN_RTRO_MASK	= (1<<3),
+	RPN_RTCI_MASK	= (1<<4),
+	RPN_RTCO_MASK	= (1<<5)
+} RPN_FLOW_CONTROL;
 
 #define MSG_CMD		1
 #define MSG_RESP	0
@@ -658,7 +690,7 @@ typedef enum rls_param_offset {
 		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + MSC_ADDRESS_FIELD_OFFSET),\
 		(read8_buff_le(rfcomm_pkt_buff,\
 			(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + MSC_ADDRESS_FIELD_OFFSET))& \
-				(CMD_RESP_MASK|EA_ADDR_LEN_MASK|dlci<<2))))
+				(CMD_RESP_MASK|EA_ADDR_LEN_MASK))|(dlci<<2)))
 
 #define enable_rfcomm_msg_msc_dlci_ea_conf_pkt(rfcomm_pkt_buff)	\
 	(write8_buff_le(rfcomm_pkt_buff,\
@@ -691,6 +723,7 @@ typedef enum rls_param_offset {
 			(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + MSC_ADDRESS_FIELD_OFFSET))& \
 				~(CMD_RESP_MASK))))
 */
+
 
 #define set_rfcomm_msg_dlci_conf_pkt(rfcomm_pkt_buff,dlci)	\
 	(write8_buff_le(rfcomm_pkt_buff,\
@@ -766,34 +799,105 @@ typedef enum rls_param_offset {
 		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + RPN_ADDRESS_FIELD_OFFSET)) & \
 				EA_ADDR_LEN_MASK)
 
+#define set_rfcomm_msg_rpn_dlci_conf_pkt(rfcomm_pkt_buff,dlci)	\
+	(write8_buff_le(rfcomm_pkt_buff,\
+		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + RPN_ADDRESS_FIELD_OFFSET),\
+		(read8_buff_le(rfcomm_pkt_buff,\
+			(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + RPN_ADDRESS_FIELD_OFFSET))& \
+				(CMD_RESP_MASK|EA_ADDR_LEN_MASK))|(dlci<<2)))
+
+#define enable_rfcomm_msg_rpn_dlci_ea_conf_pkt(rfcomm_pkt_buff)	\
+	(write8_buff_le(rfcomm_pkt_buff,\
+		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + RPN_ADDRESS_FIELD_OFFSET),\
+		(read8_buff_le(rfcomm_pkt_buff,\
+			(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + RPN_ADDRESS_FIELD_OFFSET))& \
+				~(EA_ADDR_LEN_MASK))))
+
+#define disable_rfcomm_msg_rpn_dlci_ea_conf_pkt(rfcomm_pkt_buff)	\
+	(write8_buff_le(rfcomm_pkt_buff,\
+		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + RPN_ADDRESS_FIELD_OFFSET),\
+		(read8_buff_le(rfcomm_pkt_buff,\
+			(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + RPN_ADDRESS_FIELD_OFFSET))| \
+				(EA_ADDR_LEN_MASK))))
+
+#define enable_rfcomm_msp_rpn_dlci_cr(rfcomm_pkt_buff)	\
+	(write8_buff_le(rfcomm_pkt_buff,\
+		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + RPN_ADDRESS_FIELD_OFFSET),\
+		(read8_buff_le(rfcomm_pkt_buff,\
+			(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + RPN_ADDRESS_FIELD_OFFSET))| \
+				(CMD_RESP_MASK))))
+
 #define get_rfcomm_msg_rpn_baud_rate_conf_pkt(rfcomm_pkt_buff)	\
 	(read8_buff_le(rfcomm_pkt_buff,\
 		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + RPN_BAUD_RATE_FIELD_OFFSET)))
+
+#define set_rfcomm_msg_rpn_baud_rate_conf_pkt(rfcomm_pkt_buff,baudrate)	\
+	(write8_buff_le(rfcomm_pkt_buff,\
+		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + RPN_BAUD_RATE_FIELD_OFFSET),\
+		baudrate))
 
 #define get_rfcomm_msg_rpn_data_conf_pkt(rfcomm_pkt_buff)	\
 	(read8_buff_le(rfcomm_pkt_buff,\
 		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) \
 		+ RPN_DATA_START_STOP_PARITY_FIELD_OFFSET))	& RPN_DATA_MASK)
 
+#define set_rfcomm_msg_rpn_data_conf_pkt(rfcomm_pkt_buff,data_bits)	\
+	(write8_buff_le(rfcomm_pkt_buff,\
+		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) \
+			+ RPN_DATA_START_STOP_PARITY_FIELD_OFFSET),\
+		((read8_buff_le(rfcomm_pkt_buff,(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff)\
+			+ RPN_DATA_START_STOP_PARITY_FIELD_OFFSET)) & (~RPN_DATA_MASK)) | (data_bits))\
+			))
+
 #define get_rfcomm_msg_rpn_stop_bit_conf_pkt(rfcomm_pkt_buff)	\
 	((read8_buff_le(rfcomm_pkt_buff,\
 		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) \
 		+ RPN_DATA_START_STOP_PARITY_FIELD_OFFSET)) & RPN_STOP_MASK) >> 2)
+
+#define set_rfcomm_msg_rpn_stop_bit_conf_pkt(rfcomm_pkt_buff,stop_bit)	\
+	(write8_buff_le(rfcomm_pkt_buff,\
+		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) \
+			+ RPN_DATA_START_STOP_PARITY_FIELD_OFFSET),\
+		((read8_buff_le(rfcomm_pkt_buff,(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff)\
+			+ RPN_DATA_START_STOP_PARITY_FIELD_OFFSET)) & (~RPN_STOP_MASK)) | (stop_bit<<2))\
+			))
 
 #define get_rfcomm_msg_rpn_parity_bit_conf_pkt(rfcomm_pkt_buff)	\
 	((read8_buff_le(rfcomm_pkt_buff, \
 		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) \
 			+ RPN_DATA_START_STOP_PARITY_FIELD_OFFSET)) & RPN_PARITY_BIT_MASK) >> 3)
 
-#define get_rfcomm_msg_rpn_pt_conf_pkt(rfcomm_pkt_buff) \
+#define set_rfcomm_msg_rpn_parity_bit_conf_pkt(rfcomm_pkt_buff,parity_bit)	\
+	(write8_buff_le(rfcomm_pkt_buff,\
+		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) \
+			+ RPN_DATA_START_STOP_PARITY_FIELD_OFFSET),\
+		((read8_buff_le(rfcomm_pkt_buff,(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff)\
+			+ RPN_DATA_START_STOP_PARITY_FIELD_OFFSET)) & (~RPN_PARITY_BIT_MASK)) | (parity_bit<<3))\
+			))
+
+#define get_rfcomm_msg_rpn_parity_type_conf_pkt(rfcomm_pkt_buff) \
 	((read8_buff_le(rfcomm_pkt_buff, \
 		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) \
-			+ RPN_DATA_START_STOP_PARITY_FIELD_OFFSET)) & RPN_PARITY_TYPE_MASK) >>4)
+			+ RPN_DATA_START_STOP_PARITY_FIELD_OFFSET)) & RPN_PARITY_TYPE_MASK) >> 4)
+
+#define set_rfcomm_msg_rpn_parity_type_conf_pkt(rfcomm_pkt_buff,parity_type)	\
+	(write8_buff_le(rfcomm_pkt_buff,\
+		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) \
+			+ RPN_DATA_START_STOP_PARITY_FIELD_OFFSET),\
+		((read8_buff_le(rfcomm_pkt_buff,(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff)\
+			+ RPN_DATA_START_STOP_PARITY_FIELD_OFFSET)) & (~RPN_PARITY_TYPE_MASK)) | (parity_type<<4))\
+			))
 
 #define get_rfcomm_msg_rpn_flow_ctrl_conf_pkt(rfcomm_pkt_buff) \
 	(read8_buff_le(rfcomm_pkt_buff, \
 		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) \
 			+ RPN_FLOW_CTRL_FIELD_OFFSET)))
+
+#define set_rfcomm_msg_rpn_flow_ctrl_conf_pkt(rfcomm_pkt_buff,flow_control) \
+	write8_buff_le(rfcomm_pkt_buff,\
+		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + RPN_FLOW_CTRL_FIELD_OFFSET),\
+		(flow_control))
+
 
 #define get_rfcomm_msg_rpn_xi_conf_pkt(rfcomm_pkt_buff)	\
 	((get_rfcomm_msg_rpn_flow_ctrl_conf_pkt(rfcomm_pkt_buff)) \
@@ -824,25 +928,20 @@ typedef enum rls_param_offset {
 		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) \
 			+ RPN_HW_XON_FIELD_OFFSET)))
 
+#define set_rfcomm_msg_rpn_hw_xon_conf_pkt(rfcomm_pkt_buff,xon) \
+	(write8_buff_le(rfcomm_pkt_buff,\
+		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + RPN_HW_XON_FIELD_OFFSET),\
+		(xon)))
+
 #define get_rfcomm_msg_rpn_hw_xoff_conf_pkt(rfcomm_pkt_buff)	\
 	(read8_buff_le(rfcomm_pkt_buff, \
 		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) \
 			+ RPN_HW_XOFF_FIELD_OFFSET)))
 
-#define get_rfcomm_msg_rpn_pm_lsb_conf_pkt(rfcomm_pkt_buff)	\
-	(read8_buff_le(rfcomm_pkt_buff, \
-		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) \
-			+ RPN_PM_FIELD_LSB_OFFSET)))
-
-#define get_rfcomm_msg_rpn_pm_msb_conf_pkt(rfcomm_pkt_buff)	\
-	(read8_buff_le(rfcomm_pkt_buff, \
-		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) \
-			+ RPN_PM_FIELD_MSB_OFFSET)))
-
-
-#define get_rfcomm_msg_rpn_pm_conf_pkt(rfcomm_pkt_buff)	\
-	(get_rfcomm_msg_rpn_pm_msb_conf_pkt(rfcomm_pkt_buff) << 8) |\
-		(get_rfcomm_msg_rpn_pm_lsb_conf_pkt(rfcomm_pkt_buff))
+#define set_rfcomm_msg_rpn_hw_xoff_conf_pkt(rfcomm_pkt_buff,xoff) \
+	(write8_buff_le(rfcomm_pkt_buff,\
+		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + RPN_HW_XOFF_FIELD_OFFSET),\
+		(xoff)))
 
 #define get_rfcomm_msg_pm_lsb_offset(rfcomm_pkt_buff)	\
 		((get_rfcomm_msg_payload_offset(rfcomm_pkt_buff)) + \
@@ -852,15 +951,34 @@ typedef enum rls_param_offset {
 		((get_rfcomm_msg_payload_offset(rfcomm_pkt_buff)) + \
 									(RPN_PM_FIELD_MSB_OFFSET))
 
-#define set_rfcomm_msg_pm_lsb_conf_pkt(rfcomm_pkt_buff,opt)	\
+#define get_rfcomm_msg_rpn_pm_lsb_conf_pkt(rfcomm_pkt_buff)	\
+	(read8_buff_le(rfcomm_pkt_buff, \
+		(get_rfcomm_msg_pm_lsb_offset(rfcomm_pkt_buff))))
+			
+
+#define get_rfcomm_msg_rpn_pm_msb_conf_pkt(rfcomm_pkt_buff)	\
+	(read8_buff_le(rfcomm_pkt_buff, \
+		(get_rfcomm_msg_pm_msb_offset(rfcomm_pkt_buff))))
+			
+
+#define get_rfcomm_msg_rpn_pm_conf_pkt(rfcomm_pkt_buff)	\
+	((get_rfcomm_msg_rpn_pm_msb_conf_pkt(rfcomm_pkt_buff) << 8) |\
+		(get_rfcomm_msg_rpn_pm_lsb_conf_pkt(rfcomm_pkt_buff)))
+
+
+#define set_rfcomm_msg_rpn_pm_lsb_conf_pkt(rfcomm_pkt_buff,opt)	\
 		write8_buff_le(rfcomm_pkt_buff,\
 					get_rfcomm_msg_pm_lsb_offset(rfcomm_pkt_buff),\
 					opt)
 					
-#define set_rfcomm_msg_pm_msb_conf_pkt(rfcomm_pkt_buff,opt)	\
+#define set_rfcomm_msg_rpn_pm_msb_conf_pkt(rfcomm_pkt_buff,opt)	\
 		write8_buff_le(rfcomm_pkt_buff,\
 					get_rfcomm_msg_pm_msb_offset(rfcomm_pkt_buff),\
 					opt)
+
+#define set_rfcomm_msg_pm_conf_pkt(rfcomm_pkt_buff,opt)	\
+		set_rfcomm_msg_pm_lsb_conf_pkt(rfcomm_pkt_buff,(opt & 0xFF));\
+		set_rfcomm_msg_pm_msb_conf_pkt(rfcomm_pkt_buff,((opt & 0xFF00)>>8))
 
 
 #define get_rfcomm_msg_rls_conf_pkt(rfcomm_pkt_buff)	\

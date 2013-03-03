@@ -310,6 +310,10 @@ Use "rctest" with necessary parameters for RFCOMM testing.
 
 TODO: Examples and documentation.
  
+Testing of RFCOMM incoming negotiations
+=======================================
+Use rctest -r. It does a listen and recieve. If the test is not used
+the connection will be refused by sending a DM pkt.
 
 Notes on supposed cq bug.
 ========================

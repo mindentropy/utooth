@@ -263,6 +263,47 @@ void create_pn_msg(
 	
 }
 
+void create_rpn_msg(uint8_t *rfcomm_pkt_buff,
+					uint8_t cmdresp,
+					uint8_t control_signal) { 
+
+	set_rfcomm_msg_type(rfcomm_pkt_buff,RPN);
+	disable_rfcomm_msg_type_ea(rfcomm_pkt_buff);
+
+	if(cmdresp == MSG_CMD) {
+		enable_rfcomm_msg_type_cr(rfcomm_pkt_buff);
+	}
+	else {
+		//Expecting the same control signals as the original packet.
+		disable_rfcomm_msg_type_cr(rfcomm_pkt_buff);
+	}
+	
+	disable_rfcomm_msg_type_len_ea(rfcomm_pkt_buff);
+	set_rfcomm_msg_type_len(rfcomm_pkt_buff,8);
+
+	//TODO:Disable DLCI ea.
+	set_rfcomm_msg_rpn_dlci_conf_pkt(rfcomm_pkt_buff,20);
+	disable_rfcomm_msg_rpn_dlci_ea_conf_pkt(rfcomm_pkt_buff);
+	enable_rfcomm_msp_rpn_dlci_cr(rfcomm_pkt_buff);
+
+	set_rfcomm_msg_rpn_baud_rate_conf_pkt(rfcomm_pkt_buff,B115200);
+	set_rfcomm_msg_rpn_data_conf_pkt(rfcomm_pkt_buff,BITS8);
+	set_rfcomm_msg_rpn_stop_bit_conf_pkt(rfcomm_pkt_buff,0);
+	set_rfcomm_msg_rpn_parity_bit_conf_pkt(rfcomm_pkt_buff,0);
+	set_rfcomm_msg_rpn_flow_ctrl_conf_pkt(rfcomm_pkt_buff,0);
+	//set_rfcomm_msg_rpn_parity_type_conf_pkt(rfcomm_pkt_buff,ODD_PAIRTY);
+	/*set_rfcomm_msg_rpn_flow_ctrl_conf_pkt(rfcomm_pkt_buff,
+					(RPN_XI_MASK|RPN_XO_MASK|RPN_RTRI_MASK|RPN_RTRO_MASK|RPN_RTCI_MASK|RPN_RTCO_MASK));*/
+
+	set_rfcomm_msg_rpn_pm_lsb_conf_pkt(rfcomm_pkt_buff,
+			PM_BR_MASK|PM_DB_MASK|PM_SB_MASK|PM_P_MASK|PM_PT_MASK|
+			PM_XON_MASK|PM_XOFF_MASK);
+
+	set_rfcomm_msg_rpn_pm_msb_conf_pkt(rfcomm_pkt_buff,
+			PM_XI_MASK|PM_XO_MASK|PM_RTRI_MASK|PM_RTRO_MASK|
+			PM_RTCI_MASK|PM_RTCO_MASK);
+}
+
 /*
 void create_pn_msg(uint8_t *rfcomm_pkt_buff,
 				uint8_t cmdresp,
@@ -285,44 +326,6 @@ void create_pn_msg(uint8_t *msg_buff,
 }*/
 
 /*TODO: Last modified here. CHECK!!!!! */
-void create_rpn_msg(uint8_t *rfcomm_pkt_buff,
-					uint8_t chaddr,
-					uint16_t len,
-					uint8_t pfbit,
-					uint8_t cmdresp,
-					uint8_t control_signal) { //TODO:Check control_signal added here. Have to be modified.
-
-	disable_ea_addr_field(rfcomm_pkt_buff);
-	
-	if(cmdresp == MSG_CMD)
-		enable_cr_addr_field(rfcomm_pkt_buff);
-	else
-		disable_cr_addr_field(rfcomm_pkt_buff);
-
-	disable_dir_addr_field(rfcomm_pkt_buff);
-	set_rfcomm_server_channel(rfcomm_pkt_buff,chaddr);
-
-	set_rfcomm_ctrl_field(rfcomm_pkt_buff,UIH);
-
-	if(pfbit)
-		set_rfcomm_poll_final_bit(rfcomm_pkt_buff);
-	else
-		clear_rfcomm_poll_final_bit(rfcomm_pkt_buff);
-
-	
-	set_rfcomm_len_field_lsb(rfcomm_pkt_buff,len);
-	disable_rfcomm_len_ea(rfcomm_pkt_buff);
-
-	if(cmdresp == MSG_CMD)
-		enable_rfcomm_msg_type_cr(rfcomm_pkt_buff);
-	else
-		disable_rfcomm_msg_type_cr(rfcomm_pkt_buff);
-
-
-	set_rfcomm_msg_msc_ctrl_sig(rfcomm_pkt_buff,control_signal);
-	set_rfcomm_fcs(rfcomm_pkt_buff);
-	
-}
 
 
 

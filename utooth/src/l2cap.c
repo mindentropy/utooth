@@ -174,6 +174,8 @@ void process_connection_request(
 	(data->l2cap_info).dcid = dcid;
 	(data->l2cap_info).psm_type = psm;
 
+	(data->l2cap_info).connect_initiate = REMOTE;
+
 	init_rfcomm_state((data->l2cap_info).rfcomm_info.rfcomm_state);
 	init_rfcomm_transition((data->l2cap_info).
 							rfcomm_info.
@@ -784,7 +786,7 @@ process_l2cap_pkt(uint16_t conn_handle,
 
 							break;
 						case UIH:
-							halUsbSendStr(">UIH\n");
+							//halUsbSendStr(">UIH\n");
 
 							/* For UIH calculate FCS on address and control fields only */
 							if(verify_fcs(tmp,FCS_SIZE_UIH,get_rfcomm_fcs(tmp)) == FCS_FAIL) 
@@ -881,25 +883,62 @@ process_l2cap_pkt(uint16_t conn_handle,
 										* vation.
 										*/
 										
-										if(get_rfcomm_msg_credit_conf_pkt(tmp) == 0xF) {
+										if(get_rfcomm_msg_credit_conf_pkt(tmp) == 0xE) {
 											halUsbSendStr("pn resp\n");
 
+											set_rfcomm_state(
+												(conn->l2cap_info).rfcomm_info.rfcomm_state,
+												RFCOMM_PN_CONFIRM);
 											set_rfcomm_transition(
 												(conn->l2cap_info).rfcomm_info.rfcomm_state_transition,
 												RFCOMM_IDLE);
+
+											/* Send RPN update */
+											if((conn->l2cap_info).connect_initiate == LOCAL) {
+												set_rfcomm_state(
+													(conn->l2cap_info).rfcomm_info.rfcomm_state,
+													RFCOMM_RPN_REQUEST);
+												set_rfcomm_transition(
+													(conn->l2cap_info).rfcomm_info.rfcomm_state_transition,
+													RFCOMM_ACTIVE);
+												
+												halUsbSendStr("<RPN\n");
+												create_rpn_msg(tmp,
+															MSG_CMD,
+															0);
+
+												create_rfcomm_pkt(tmp,
+														get_rfcomm_server_ch_addr(tmp),
+														10,
+														POLL_FINAL_DISABLE,
+														MSG_CMD,
+														UIH);
+
+												create_l2cap_bframe_rfcomm_pkt(l2cap_pkt_buff,conn);
+
+												send_hci_acl_header(get_acl_conn_handle(conn_handle),
+																PB_FIRST_AUTO_FLUSH_PKT,
+																H2C_NO_BROADCAST,
+																get_l2cap_bframe_size(l2cap_pkt_buff));
+	
+												hci_send_data_chk(i,
+													l2cap_pkt_buff,
+													get_l2cap_bframe_size(l2cap_pkt_buff));
+											}
+
 											return;
 										}
 
 										for(i = 0;i<8;i++) {
 											(conn->l2cap_info)
 												.rfcomm_info
-												.rfcomm_pn_conf_opt.config[i] = 
+												.rfcomm_conf_opt.pn_config[i] = 
 												get_rfcomm_msg_payload_uih_param(tmp,i);
 										}
 										
 										if(is_valid_pn((conn->l2cap_info)
 															.rfcomm_info
-															.rfcomm_pn_conf_opt.config)) {
+															.rfcomm_conf_opt.pn_config)) {
 											//halUsbSendStr("valid pn\n");
 										}
 										
@@ -1013,11 +1052,11 @@ process_l2cap_pkt(uint16_t conn_handle,
 										halUsbSendStr(">RPN\n");
 										
 										
-										set_rfcomm_msg_pm_lsb_conf_pkt(tmp,
+										set_rfcomm_msg_rpn_pm_lsb_conf_pkt(tmp,
 											PM_BR_MASK|PM_DB_MASK|PM_SB_MASK|PM_P_MASK|PM_PT_MASK|
 												PM_XON_MASK|PM_XOFF_MASK);
 
-										set_rfcomm_msg_pm_msb_conf_pkt(tmp,
+										set_rfcomm_msg_rpn_pm_msb_conf_pkt(tmp,
 											PM_XI_MASK|PM_XO_MASK|PM_RTRI_MASK|PM_RTRO_MASK|
 											PM_RTCI_MASK|PM_RTCO_MASK);
 										
