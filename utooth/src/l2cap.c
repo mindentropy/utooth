@@ -984,34 +984,42 @@ process_l2cap_pkt(uint16_t conn_handle,
 
 										if(get_rfcomm_msg_type_cr(tmp) == MSG_CMD){
 											halUsbSendStr(">MSC cmd\n");
-										}
-										
-										create_msc_msg(tmp,
+
+											/* Send response copying the V.24 signals */
+
+											disable_rfcomm_msg_type_cr(tmp);
+											
+											set_rfcomm_msg_msc_ctrl_sig(tmp,
+														get_rfcomm_msg_msc_ctrl_sig_conf_pkt(tmp)
+														); 
+											/*create_msc_msg(tmp,
+														MSG_RESP,
+														get_rfcomm_msg_msc_ctrl_sig_conf_pkt(tmp)
+														);*/
+
+											create_rfcomm_pkt(
+													tmp,
+													get_rfcomm_server_ch_addr(tmp),
+													get_rfcomm_payload_len(tmp),
+													POLL_FINAL_DISABLE,
 													MSG_RESP,
-													get_rfcomm_msg_msc_ctrl_sig_conf_pkt(tmp)
+													UIH
 													);
 
-										create_rfcomm_pkt(
-												tmp,
-												get_rfcomm_server_ch_addr(tmp),
-												get_rfcomm_payload_len(tmp),
-												POLL_FINAL_DISABLE,
-												MSG_RESP,
-												UIH
+											create_l2cap_bframe_rfcomm_pkt(l2cap_pkt_buff,conn);
+
+											send_hci_acl_header(get_acl_conn_handle(conn_handle),
+															PB_FIRST_AUTO_FLUSH_PKT,
+															H2C_NO_BROADCAST,
+															get_l2cap_bframe_size(l2cap_pkt_buff));
+
+											hci_send_data_chk(i,
+												l2cap_pkt_buff,
+												get_l2cap_bframe_size(l2cap_pkt_buff)
 												);
+										}
 										
 										
-										create_l2cap_bframe_rfcomm_pkt(l2cap_pkt_buff,conn);
-
-										send_hci_acl_header(get_acl_conn_handle(conn_handle),
-														PB_FIRST_AUTO_FLUSH_PKT,
-														H2C_NO_BROADCAST,
-														get_l2cap_bframe_size(l2cap_pkt_buff));
-
-										hci_send_data_chk(i,
-											l2cap_pkt_buff,
-											get_l2cap_bframe_size(l2cap_pkt_buff)
-											);
 										
 
 										create_msc_msg(tmp,

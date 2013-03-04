@@ -217,6 +217,7 @@ void create_msc_msg(uint8_t *rfcomm_pkt_buff,
 					uint8_t control_signal) {
 
 	
+	set_rfcomm_msg_type(rfcomm_pkt_buff,MSC);
 	disable_rfcomm_msg_type_ea(rfcomm_pkt_buff);
 
 	if(cmdresp == MSG_CMD) {
@@ -227,6 +228,9 @@ void create_msc_msg(uint8_t *rfcomm_pkt_buff,
 		disable_rfcomm_msg_type_cr(rfcomm_pkt_buff);
 	}
 
+	disable_rfcomm_msg_type_len_ea(rfcomm_pkt_buff);
+	set_rfcomm_msg_type_len(rfcomm_pkt_buff,2);
+
 	set_rfcomm_msg_msc_ctrl_sig(rfcomm_pkt_buff,control_signal); 
 }
 
@@ -234,7 +238,7 @@ void create_msc_msg(uint8_t *rfcomm_pkt_buff,
 void create_pn_msg(
 				uint8_t *rfcomm_pkt_buff,
 				uint8_t cmdresp,
-				uint8_t *config
+				uint8_t *pn_config
 				) {
 
 	set_rfcomm_msg_type(rfcomm_pkt_buff,PN);
@@ -265,7 +269,7 @@ void create_pn_msg(
 
 void create_rpn_msg(uint8_t *rfcomm_pkt_buff,
 					uint8_t cmdresp,
-					uint8_t control_signal) { 
+					uint8_t *rpn_config) { 
 
 	set_rfcomm_msg_type(rfcomm_pkt_buff,RPN);
 	disable_rfcomm_msg_type_ea(rfcomm_pkt_buff);
@@ -291,9 +295,10 @@ void create_rpn_msg(uint8_t *rfcomm_pkt_buff,
 	set_rfcomm_msg_rpn_stop_bit_conf_pkt(rfcomm_pkt_buff,0);
 	set_rfcomm_msg_rpn_parity_bit_conf_pkt(rfcomm_pkt_buff,0);
 	set_rfcomm_msg_rpn_flow_ctrl_conf_pkt(rfcomm_pkt_buff,0);
-	//set_rfcomm_msg_rpn_parity_type_conf_pkt(rfcomm_pkt_buff,ODD_PAIRTY);
-	/*set_rfcomm_msg_rpn_flow_ctrl_conf_pkt(rfcomm_pkt_buff,
-					(RPN_XI_MASK|RPN_XO_MASK|RPN_RTRI_MASK|RPN_RTRO_MASK|RPN_RTCI_MASK|RPN_RTCO_MASK));*/
+
+
+	set_rfcomm_msg_rpn_hw_xon_conf_pkt(rfcomm_pkt_buff,17);
+	set_rfcomm_msg_rpn_hw_xoff_conf_pkt(rfcomm_pkt_buff,19);
 
 	set_rfcomm_msg_rpn_pm_lsb_conf_pkt(rfcomm_pkt_buff,
 			PM_BR_MASK|PM_DB_MASK|PM_SB_MASK|PM_P_MASK|PM_PT_MASK|
