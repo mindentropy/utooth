@@ -128,10 +128,14 @@ typedef enum pn_offset_conf {
 } PN_OFFSET_CONF;
 
 
-#define MSC_ADDRESS_FIELD_OFFSET	0
-#define MSC_CONTROL_SIGNAL_OFFSET	1
-#define MSC_BREAK_SIGNAL_OFFSET		2
+typedef enum msc_param_offset {
+	MSC_ADDRESS_FIELD_OFFSET,
+	MSC_CONTROL_SIGNAL_OFFSET,
+	MSC_BREAK_SIGNAL_OFFSET	
+} MSC_PARAM_OFFSET;
 
+#define MSC_BREAK_SIGNAL_LEN_MASK	0xF0
+#define MSC_BREAK_SIGNAL_MASK		0xE
 
 typedef enum rpn_param_offset {
 	RPN_ADDRESS_FIELD_OFFSET,
@@ -706,6 +710,33 @@ typedef enum rpn_flow_control {
 			(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + MSC_ADDRESS_FIELD_OFFSET))| \
 				(EA_ADDR_LEN_MASK))))
 
+#define enable_rfcomm_msg_msc_break_sig_ea_conf_pkt(rfcomm_pkt_buff)	\
+	(write8_buff_le(rfcomm_pkt_buff,\
+		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + MSC_BREAK_SIGNAL_OFFSET),\
+		(read8_buff_le(rfcomm_pkt_buff,\
+			(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + MSC_BREAK_SIGNAL_OFFSET))& \
+				~(EA_ADDR_LEN_MASK))))
+
+#define disable_rfcomm_msg_msc_break_sig_ea_conf_pkt(rfcomm_pkt_buff,dlci)	\
+	(write8_buff_le(rfcomm_pkt_buff,\
+		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + MSC_BREAK_SIGNAL_OFFSET),\
+		(read8_buff_le(rfcomm_pkt_buff,\
+			(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + MSC_BREAK_SIGNAL_OFFSET))| \
+				(EA_ADDR_LEN_MASK))))
+
+#define set_rfcomm_msg_msc_break_signal_conf_pkt(rfcomm_pkt_buff,break_signal)	\
+	(write8_buff_le(rfcomm_pkt_buff,\
+		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + MSC_BREAK_SIGNAL_OFFSET),\
+		(read8_buff_le(rfcomm_pkt_buff,\
+			(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + MSC_BREAK_SIGNAL_OFFSET))& \
+				(EA_ADDR_LEN_MASK|MSC_BREAK_SIGNAL_LEN_MASK))|(break_signal)))
+		
+#define set_rfcomm_msg_msc_break_signal_len_conf_pkt(rfcomm_pkt_buff,signal_len)	\
+	(write8_buff_le(rfcomm_pkt_buff,\
+		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + MSC_BREAK_SIGNAL_OFFSET),\
+		(read8_buff_le(rfcomm_pkt_buff,\
+			(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + MSC_BREAK_SIGNAL_OFFSET))& \
+				(EA_ADDR_LEN_MASK|MSC_BREAK_SIGNAL_MASK))|(signal_len)))
 
 /*
 #define enable_rfcomm_msg_msc_dlci_cr_conf_pkt(rfcomm_pkt_buff) \
