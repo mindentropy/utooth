@@ -148,6 +148,9 @@ typedef enum rpn_param_offset {
 	RPN_PM_FIELD_MSB_OFFSET
 } RPN_PARAM_OFFSET;
 
+typedef enum nsc_param_offset {
+	NSC_CMD_TYPE_OFFSET
+} NSC_PARAM_OFFSET;
 
 typedef enum baud_rate {
 	B2400,
@@ -1050,6 +1053,41 @@ typedef enum rpn_flow_control {
 #define get_rfcomm_msg_rls_fe_status(rfcomm_pkt_buff) \
 	((get_rfcomm_msg_rls_conf_pkt(rfcomm_pkt_buff) & RLS_FRAMING_ERROR) >> 3)
 	
+#define enable_rfcomm_msg_nsc_cmd_type_ea_conf_pkt(rfcomm_pkt_buff)	\
+	(write8_buff_le(rfcomm_pkt_buff,\
+		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + NSC_CMD_TYPE_OFFSET),\
+		(read8_buff_le(rfcomm_pkt_buff,\
+			(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + NSC_CMD_TYPE_OFFSET))& \
+				~(EA_ADDR_LEN_MASK))))
+
+#define disable_rfcomm_msg_nsc_cmd_type_ea_conf_pkt(rfcomm_pkt_buff)	\
+	(write8_buff_le(rfcomm_pkt_buff,\
+		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + NSC_CMD_TYPE_OFFSET),\
+		(read8_buff_le(rfcomm_pkt_buff,\
+			(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + NSC_CMD_TYPE_OFFSET))| \
+				(EA_ADDR_LEN_MASK))))
+
+#define set_rfcomm_msg_msc_nsc_cmd_type_pkt(rfcomm_pkt_buff,cmd_type)	\
+	(write8_buff_le(rfcomm_pkt_buff,\
+		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + NSC_CMD_TYPE_OFFSET),\
+		(read8_buff_le(rfcomm_pkt_buff,\
+			(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + NSC_CMD_TYPE_OFFSET))& \
+				(CMD_RESP_MASK|EA_ADDR_LEN_MASK))|(cmd_type<<2)))
+
+#define enable_rfcomm_msg_nsc_cmd_type_cr(rfcomm_pkt_buff)	\
+	(write8_buff_le(rfcomm_pkt_buff,\
+		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + NSC_CMD_TYPE_OFFSET),\
+		(read8_buff_le(rfcomm_pkt_buff,\
+			(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + NSC_CMD_TYPE_OFFSET))| \
+				(CMD_RESP_MASK))))
+
+#define disable_rfcomm_msg_nsc_cmd_type_cr(rfcomm_pkt_buff)	\
+	(write8_buff_le(rfcomm_pkt_buff,\
+		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + NSC_CMD_TYPE_OFFSET),\
+		(read8_buff_le(rfcomm_pkt_buff,\
+			(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + NSC_CMD_TYPE_OFFSET))& \
+				~(CMD_RESP_MASK))))
+
 #define get_rfcomm_credits(rfcomm_pkt_buff)	\
 	read8_buff_le(rfcomm_pkt_buff,\
 		(get_rfcomm_payload_offset(rfcomm_pkt_buff) + RFCOMM_CREDIT_OFFSET))

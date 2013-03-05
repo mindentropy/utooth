@@ -886,33 +886,34 @@ process_l2cap_pkt(uint16_t conn_handle,
 										if(get_rfcomm_msg_credit_conf_pkt(tmp) == 0xE) {
 											halUsbSendStr("pn resp\n");
 
-											set_rfcomm_state(
-												(conn->l2cap_info).rfcomm_info.rfcomm_state,
-												RFCOMM_PN_CONFIRM);
-											set_rfcomm_transition(
-												(conn->l2cap_info).rfcomm_info.rfcomm_state_transition,
-												RFCOMM_IDLE);
 
-											/* Send RPN update */
+											halUsbSendStr("<MSC cmd\n");
 											if((conn->l2cap_info).connect_initiate == LOCAL) {
-												set_rfcomm_state(
-													(conn->l2cap_info).rfcomm_info.rfcomm_state,
-													RFCOMM_RPN_REQUEST);
-												set_rfcomm_transition(
-													(conn->l2cap_info).rfcomm_info.rfcomm_state_transition,
-													RFCOMM_ACTIVE);
+												set_rfcomm_state((conn->l2cap_info).rfcomm_info.rfcomm_state,
+																					RFCOMM_MSC_REQUEST);
+
+
+												set_rfcomm_transition((conn->l2cap_info).
+																	rfcomm_info.
+																	rfcomm_state,
+																	RFCOMM_ACTIVE);
 												
-												halUsbSendStr("<RPN\n");
-												create_rpn_msg(tmp,
-															MSG_CMD,
-															0);
+
+												create_msc_msg(tmp,
+																MSG_CMD,
+																MSC_CTRL_SIG_RTC_MASK|
+																MSC_CTRL_SIG_RTR_MASK|
+																MSC_CTRL_SIG_DV_MASK);
 
 												create_rfcomm_pkt(tmp,
 														get_rfcomm_server_ch_addr(tmp),
-														10,
+														4,
 														POLL_FINAL_DISABLE,
 														MSG_CMD,
 														UIH);
+												
+												dump_rfcomm_pkt(tmp);
+												//dump_data_payload(tmp);
 
 												create_l2cap_bframe_rfcomm_pkt(l2cap_pkt_buff,conn);
 
@@ -924,7 +925,7 @@ process_l2cap_pkt(uint16_t conn_handle,
 												hci_send_data_chk(i,
 													l2cap_pkt_buff,
 													get_l2cap_bframe_size(l2cap_pkt_buff));
-											}
+
 
 											return;
 										}
@@ -978,13 +979,55 @@ process_l2cap_pkt(uint16_t conn_handle,
 										//halUsbSendStr(">MSC\n");
 
 										if(get_rfcomm_msg_type_cr(tmp) == MSG_RESP) {
-											halUsbSendStr(">MSC Resp\n");
+											//halUsbSendStr(">MSC Resp\n");
 
+											set_rfcomm_state(
+												(conn->l2cap_info).rfcomm_info.rfcomm_state,
+												RFCOMM_PN_CONFIRM);
+											set_rfcomm_transition(
+												(conn->l2cap_info).rfcomm_info.rfcomm_state_transition,
+												RFCOMM_IDLE);
+
+											/* Send RPN update */
+											if((conn->l2cap_info).connect_initiate == LOCAL) {
+												set_rfcomm_state(
+													(conn->l2cap_info).rfcomm_info.rfcomm_state,
+													RFCOMM_RPN_REQUEST);
+												set_rfcomm_transition(
+													(conn->l2cap_info).rfcomm_info.rfcomm_state_transition,
+													RFCOMM_ACTIVE);
+												
+												halUsbSendStr("<RPN\n");
+												create_rpn_msg(tmp,
+															MSG_CMD,
+															0);
+
+												create_rfcomm_pkt(tmp,
+														get_rfcomm_server_ch_addr(tmp),
+														10,
+														POLL_FINAL_DISABLE,
+														MSG_CMD,
+														UIH);
+
+												create_l2cap_bframe_rfcomm_pkt(l2cap_pkt_buff,conn);
+
+												send_hci_acl_header(get_acl_conn_handle(conn_handle),
+																PB_FIRST_AUTO_FLUSH_PKT,
+																H2C_NO_BROADCAST,
+																get_l2cap_bframe_size(l2cap_pkt_buff));
+	
+												hci_send_data_chk(i,
+													l2cap_pkt_buff,
+													get_l2cap_bframe_size(l2cap_pkt_buff));
+											}
 											return;
 										}
 
 										if(get_rfcomm_msg_type_cr(tmp) == MSG_CMD){
 											halUsbSendStr("<MSC cmd\n");
+											
+											/*dump_rfcomm_pkt(tmp);
+											while(1);*/
 
 											/* Send response copying the V.24 signals */
 
@@ -1060,39 +1103,8 @@ process_l2cap_pkt(uint16_t conn_handle,
 										if(get_rfcomm_msg_type_cr(tmp) == MSG_RESP) {
 											halUsbSendStr(">RPN Resp\n");
 											
-											halUsbSendStr("<MSC\n");
-											if((conn->l2cap_info).connect_initiate == LOCAL) {
-												set_rfcomm_state((conn->l2cap_info).rfcomm_info.rfcomm_state,
-																					RFCOMM_MSC_REQUEST);
 
-
-												set_rfcomm_transition((conn->l2cap_info).rfcomm_info.rfcomm_state,
-																					RFCOMM_ACTIVE);
-												
-
-												create_msc_msg(tmp,
-																MSG_CMD,
-																MSC_CTRL_SIG_RTC_MASK|
-																MSC_CTRL_SIG_RTR_MASK|
-																MSC_CTRL_SIG_DV_MASK);
-
-												create_rfcomm_pkt(tmp,
-														get_rfcomm_server_ch_addr(tmp),
-														4,
-														POLL_FINAL_DISABLE,
-														MSG_CMD,
-														UIH);
-
-												create_l2cap_bframe_rfcomm_pkt(l2cap_pkt_buff,conn);
-
-												send_hci_acl_header(get_acl_conn_handle(conn_handle),
-																PB_FIRST_AUTO_FLUSH_PKT,
-																H2C_NO_BROADCAST,
-																get_l2cap_bframe_size(l2cap_pkt_buff));
-	
-												hci_send_data_chk(i,
-													l2cap_pkt_buff,
-													get_l2cap_bframe_size(l2cap_pkt_buff));
+											
 
 											}
 											

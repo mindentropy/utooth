@@ -85,7 +85,7 @@ void dump_pkt_alpha(uint8_t *rfcomm_pkt_buff,
 		halUsbSendChar(rfcomm_pkt_buff[i]);
 	
 
-	halUsbSendChar('\n');
+	//halUsbSendChar('\n');
 }
 
 void dump_data_payload(uint8_t *rfcomm_pkt_buff) {
@@ -238,11 +238,11 @@ void create_msc_msg(
  	enable_rfcomm_msg_msc_dlci_cr(rfcomm_pkt_buff);
 
 	/* Control signal */
-	disable_rfcomm_msg_msc_ctrl_sig_ea_conf_pkt(rfcomm_pkt_buff);
 	set_rfcomm_msg_msc_ctrl_sig(rfcomm_pkt_buff,control_signal);
+	disable_rfcomm_msg_msc_ctrl_sig_ea_conf_pkt(rfcomm_pkt_buff);
 	
 	/* Break signal */
-	disable_rfcomm_msg_msc_break_sig_ea_conf_pkt(rfcomm_pkt_buff);
+	enable_rfcomm_msg_msc_break_sig_ea_conf_pkt(rfcomm_pkt_buff);
 	set_rfcomm_msg_msc_break_signal_conf_pkt(rfcomm_pkt_buff,0);
 	set_rfcomm_msg_msc_break_signal_len_conf_pkt(rfcomm_pkt_buff,0);
 
@@ -321,6 +321,142 @@ void create_rpn_msg(uint8_t *rfcomm_pkt_buff,
 	set_rfcomm_msg_rpn_pm_msb_conf_pkt(rfcomm_pkt_buff,
 			PM_XI_MASK|PM_XO_MASK|PM_RTRI_MASK|PM_RTRO_MASK|
 			PM_RTCI_MASK|PM_RTCO_MASK);
+}
+
+
+void create_test_msg(
+					uint8_t *rfcomm_pkt_buff,
+					uint8_t cmdresp,
+					uint8_t *buff,
+					uint8_t len
+					) {
+
+	set_rfcomm_msg_type(rfcomm_pkt_buff,TEST);
+	disable_rfcomm_msg_type_ea(rfcomm_pkt_buff);
+
+	if(cmdresp == MSG_CMD) {
+		enable_rfcomm_msg_type_cr(rfcomm_pkt_buff);
+	}
+	else {
+		//Expecting the same control signals as the original packet.
+		disable_rfcomm_msg_type_cr(rfcomm_pkt_buff);
+	}
+	
+	disable_rfcomm_msg_type_len_ea(rfcomm_pkt_buff);
+	set_rfcomm_msg_type_len(rfcomm_pkt_buff,len);
+
+	memcpy(rfcomm_pkt_buff+get_rfcomm_payload_offset(rfcomm_pkt_buff),
+					buff,
+					len);
+}
+
+void create_cld_msg(
+					uint8_t *rfcomm_pkt_buff,
+					uint8_t cmdresp
+					) {
+
+	set_rfcomm_msg_type(rfcomm_pkt_buff,CLD);
+	disable_rfcomm_msg_type_ea(rfcomm_pkt_buff);
+
+	if(cmdresp == MSG_CMD) {
+		enable_rfcomm_msg_type_cr(rfcomm_pkt_buff);
+	}
+	else {
+		//Expecting the same control signals as the original packet.
+		disable_rfcomm_msg_type_cr(rfcomm_pkt_buff);
+	}
+	
+	disable_rfcomm_msg_type_len_ea(rfcomm_pkt_buff);
+	set_rfcomm_msg_type_len(rfcomm_pkt_buff,0);
+}
+
+void create_psc_msg(
+					uint8_t *rfcomm_pkt_buff,
+					uint8_t cmdresp
+					) {
+	set_rfcomm_msg_type(rfcomm_pkt_buff,PSC);
+	disable_rfcomm_msg_type_ea(rfcomm_pkt_buff);
+
+	if(cmdresp == MSG_CMD) {
+		enable_rfcomm_msg_type_cr(rfcomm_pkt_buff);
+	}
+	else {
+		//Expecting the same control signals as the original packet.
+		disable_rfcomm_msg_type_cr(rfcomm_pkt_buff);
+	}
+	
+	disable_rfcomm_msg_type_len_ea(rfcomm_pkt_buff);
+	set_rfcomm_msg_type_len(rfcomm_pkt_buff,0);
+}
+
+void create_fcon_msg(
+					uint8_t *rfcomm_pkt_buff,
+					uint8_t cmdresp
+					) {
+
+	set_rfcomm_msg_type(rfcomm_pkt_buff,FCon);
+	disable_rfcomm_msg_type_ea(rfcomm_pkt_buff);
+
+	if(cmdresp == MSG_CMD) {
+		enable_rfcomm_msg_type_cr(rfcomm_pkt_buff);
+	}
+	else {
+		//Expecting the same control signals as the original packet.
+		disable_rfcomm_msg_type_cr(rfcomm_pkt_buff);
+	}
+	
+	disable_rfcomm_msg_type_len_ea(rfcomm_pkt_buff);
+	set_rfcomm_msg_type_len(rfcomm_pkt_buff,0);
+}
+
+void create_fcoff_msg(
+				uint8_t *rfcomm_pkt_buff,
+				uint8_t cmdresp
+				) {
+
+	set_rfcomm_msg_type(rfcomm_pkt_buff,FCoff);
+	disable_rfcomm_msg_type_ea(rfcomm_pkt_buff);
+
+	if(cmdresp == MSG_CMD) {
+		enable_rfcomm_msg_type_cr(rfcomm_pkt_buff);
+	}
+	else {
+		//Expecting the same control signals as the original packet.
+		disable_rfcomm_msg_type_cr(rfcomm_pkt_buff);
+	}
+	
+	disable_rfcomm_msg_type_len_ea(rfcomm_pkt_buff);
+	set_rfcomm_msg_type_len(rfcomm_pkt_buff,0);
+}
+
+
+void create_nsc_msg(
+				uint8_t *rfcomm_pkt_buff,
+				uint8_t cmdresp,
+				uint8_t cmdtype
+				) {
+
+	set_rfcomm_msg_type(rfcomm_pkt_buff,FCoff);
+	disable_rfcomm_msg_type_ea(rfcomm_pkt_buff);
+
+	if(cmdresp == MSG_CMD) {
+		enable_rfcomm_msg_type_cr(rfcomm_pkt_buff);
+	}
+	else {
+		//Expecting the same control signals as the original packet.
+		disable_rfcomm_msg_type_cr(rfcomm_pkt_buff);
+	}
+	
+	disable_rfcomm_msg_type_len_ea(rfcomm_pkt_buff);
+	set_rfcomm_msg_type_len(rfcomm_pkt_buff,1);
+
+
+	/* Disable the ea and enable cr */
+	disable_rfcomm_msg_nsc_cmd_type_ea_conf_pkt(rfcomm_pkt_buff);
+	enable_rfcomm_msg_nsc_cmd_type_cr(rfcomm_pkt_buff);
+
+	/* Set the cmd type */
+	set_rfcomm_msg_msc_nsc_cmd_type_pkt(rfcomm_pkt_buff,cmdtype);
 }
 
 /*
