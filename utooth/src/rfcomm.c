@@ -212,9 +212,11 @@ void create_uih_pkt(uint8_t *rfcomm_pkt_buff,
 }
 
 
-void create_msc_msg(uint8_t *rfcomm_pkt_buff,
+void create_msc_msg(
+					uint8_t *rfcomm_pkt_buff,
 					uint8_t cmdresp,
-					uint8_t control_signal) {
+					uint8_t control_signal
+					) {
 
 	
 	set_rfcomm_msg_type(rfcomm_pkt_buff,MSC);
@@ -228,10 +230,22 @@ void create_msc_msg(uint8_t *rfcomm_pkt_buff,
 		disable_rfcomm_msg_type_cr(rfcomm_pkt_buff);
 	}
 
-	disable_rfcomm_msg_type_len_ea(rfcomm_pkt_buff);
 	set_rfcomm_msg_type_len(rfcomm_pkt_buff,2);
 
-	set_rfcomm_msg_msc_ctrl_sig(rfcomm_pkt_buff,control_signal); 
+	set_rfcomm_msg_msc_dlci_conf_pkt(rfcomm_pkt_buff,20);
+	disable_rfcomm_msg_msc_dlci_ea_conf_pkt(rfcomm_pkt_buff);
+
+ 	enable_rfcomm_msg_msc_dlci_cr(rfcomm_pkt_buff);
+
+	/* Control signal */
+	disable_rfcomm_msg_msc_ctrl_sig_ea_conf_pkt(rfcomm_pkt_buff);
+	set_rfcomm_msg_msc_ctrl_sig(rfcomm_pkt_buff,control_signal);
+	
+	/* Break signal */
+	disable_rfcomm_msg_msc_break_sig_ea_conf_pkt(rfcomm_pkt_buff);
+	set_rfcomm_msg_msc_break_signal_conf_pkt(rfcomm_pkt_buff,0);
+	set_rfcomm_msg_msc_break_signal_len_conf_pkt(rfcomm_pkt_buff,0);
+
 }
 
 
@@ -288,7 +302,7 @@ void create_rpn_msg(uint8_t *rfcomm_pkt_buff,
 	//TODO:Disable DLCI ea.
 	set_rfcomm_msg_rpn_dlci_conf_pkt(rfcomm_pkt_buff,20);
 	disable_rfcomm_msg_rpn_dlci_ea_conf_pkt(rfcomm_pkt_buff);
-	enable_rfcomm_msp_rpn_dlci_cr(rfcomm_pkt_buff);
+	enable_rfcomm_msg_rpn_dlci_cr(rfcomm_pkt_buff);
 
 	set_rfcomm_msg_rpn_baud_rate_conf_pkt(rfcomm_pkt_buff,B115200);
 	set_rfcomm_msg_rpn_data_conf_pkt(rfcomm_pkt_buff,BITS8);

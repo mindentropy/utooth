@@ -684,10 +684,27 @@ typedef enum rpn_flow_control {
 #define get_rfcomm_msg_msc_ctrl_sig_dv(rfcomm_pkt_buff)	\
 	((get_rfcomm_msg_msc_ctrl_sig_conf_pkt(rfcomm_pkt_buff) & MSC_CTRL_SIG_DV_MASK) >> 7)
 
+#define enable_rfcomm_msg_msc_ctrl_sig_ea_conf_pkt(rfcomm_pkt_buff)	\
+	(write8_buff_le(rfcomm_pkt_buff,\
+		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + MSC_CONTROL_SIGNAL_OFFSET),\
+		(read8_buff_le(rfcomm_pkt_buff,\
+			(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + MSC_CONTROL_SIGNAL_OFFSET))& \
+				~(EA_ADDR_LEN_MASK))))
+
+#define disable_rfcomm_msg_msc_ctrl_sig_ea_conf_pkt(rfcomm_pkt_buff)	\
+	(write8_buff_le(rfcomm_pkt_buff,\
+		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + MSC_CONTROL_SIGNAL_OFFSET),\
+		(read8_buff_le(rfcomm_pkt_buff,\
+			(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + MSC_CONTROL_SIGNAL_OFFSET))| \
+				(EA_ADDR_LEN_MASK))))
+
+
 #define set_rfcomm_msg_msc_ctrl_sig(rfcomm_pkt_buff,sig)	\
 	(write8_buff_le(rfcomm_pkt_buff,\
-			get_rfcomm_msg_msc_ctrl_sig_offset(rfcomm_pkt_buff),\
-				sig))
+		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + MSC_CONTROL_SIGNAL_OFFSET),\
+		(read8_buff_le(rfcomm_pkt_buff,\
+			(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + MSC_CONTROL_SIGNAL_OFFSET))& \
+				(EA_ADDR_LEN_MASK))|(sig)))
 
 #define set_rfcomm_msg_msc_dlci_conf_pkt(rfcomm_pkt_buff,dlci)	\
 	(write8_buff_le(rfcomm_pkt_buff,\
@@ -703,7 +720,14 @@ typedef enum rpn_flow_control {
 			(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + MSC_ADDRESS_FIELD_OFFSET))& \
 				~(EA_ADDR_LEN_MASK))))
 
-#define disable_rfcomm_msg_msc_dlci_ea_conf_pkt(rfcomm_pkt_buff,dlci)	\
+#define enable_rfcomm_msg_msc_dlci_cr(rfcomm_pkt_buff)	\
+	(write8_buff_le(rfcomm_pkt_buff,\
+		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + MSC_ADDRESS_FIELD_OFFSET),\
+		(read8_buff_le(rfcomm_pkt_buff,\
+			(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + MSC_ADDRESS_FIELD_OFFSET))| \
+				(CMD_RESP_MASK))))
+
+#define disable_rfcomm_msg_msc_dlci_ea_conf_pkt(rfcomm_pkt_buff)	\
 	(write8_buff_le(rfcomm_pkt_buff,\
 		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + MSC_ADDRESS_FIELD_OFFSET),\
 		(read8_buff_le(rfcomm_pkt_buff,\
@@ -717,7 +741,7 @@ typedef enum rpn_flow_control {
 			(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + MSC_BREAK_SIGNAL_OFFSET))& \
 				~(EA_ADDR_LEN_MASK))))
 
-#define disable_rfcomm_msg_msc_break_sig_ea_conf_pkt(rfcomm_pkt_buff,dlci)	\
+#define disable_rfcomm_msg_msc_break_sig_ea_conf_pkt(rfcomm_pkt_buff)	\
 	(write8_buff_le(rfcomm_pkt_buff,\
 		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + MSC_BREAK_SIGNAL_OFFSET),\
 		(read8_buff_le(rfcomm_pkt_buff,\
@@ -729,14 +753,14 @@ typedef enum rpn_flow_control {
 		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + MSC_BREAK_SIGNAL_OFFSET),\
 		(read8_buff_le(rfcomm_pkt_buff,\
 			(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + MSC_BREAK_SIGNAL_OFFSET))& \
-				(EA_ADDR_LEN_MASK|MSC_BREAK_SIGNAL_LEN_MASK))|(break_signal)))
+				(EA_ADDR_LEN_MASK|MSC_BREAK_SIGNAL_LEN_MASK))|(break_signal<<1)))
 		
 #define set_rfcomm_msg_msc_break_signal_len_conf_pkt(rfcomm_pkt_buff,signal_len)	\
 	(write8_buff_le(rfcomm_pkt_buff,\
 		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + MSC_BREAK_SIGNAL_OFFSET),\
 		(read8_buff_le(rfcomm_pkt_buff,\
 			(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + MSC_BREAK_SIGNAL_OFFSET))& \
-				(EA_ADDR_LEN_MASK|MSC_BREAK_SIGNAL_MASK))|(signal_len)))
+				(EA_ADDR_LEN_MASK|MSC_BREAK_SIGNAL_MASK))|(signal_len<<4)))
 
 /*
 #define enable_rfcomm_msg_msc_dlci_cr_conf_pkt(rfcomm_pkt_buff) \
@@ -851,7 +875,7 @@ typedef enum rpn_flow_control {
 			(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + RPN_ADDRESS_FIELD_OFFSET))| \
 				(EA_ADDR_LEN_MASK))))
 
-#define enable_rfcomm_msp_rpn_dlci_cr(rfcomm_pkt_buff)	\
+#define enable_rfcomm_msg_rpn_dlci_cr(rfcomm_pkt_buff)	\
 	(write8_buff_le(rfcomm_pkt_buff,\
 		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + RPN_ADDRESS_FIELD_OFFSET),\
 		(read8_buff_le(rfcomm_pkt_buff,\
