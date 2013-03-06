@@ -704,7 +704,10 @@ process_l2cap_pkt(uint16_t conn_handle,
 
 								create_pn_msg(tmp,
 											MSG_CMD,
-											NULL);
+											(conn->l2cap_info)
+											.rfcomm_info
+											.rfcomm_conf_opt
+											.pn_config);
 
 								create_rfcomm_pkt(tmp,
 										get_rfcomm_server_ch_addr(tmp),
@@ -944,7 +947,7 @@ process_l2cap_pkt(uint16_t conn_handle,
 										}
 										
 										/* Respond with a PN response value of 14 (0xE) */
-										set_rfcomm_msg_credit_conf_pkt(tmp,0xE);
+										set_rfcomm_msg_pn_credit_support_conf_pkt(tmp,0xE);
 										
 										create_uih_pkt(tmp,
 											get_rfcomm_server_ch_addr(tmp),
@@ -1313,8 +1316,11 @@ void l2cap_connect_request(bdaddr_t bdaddr,
 
 	(data->l2cap_info).psm_type = psm_type;
 
-	init_rfcomm_state((data->l2cap_info).rfcomm_info.rfcomm_state);
-	init_rfcomm_transition((data->l2cap_info).rfcomm_info.rfcomm_state_transition);
+
+	rfcomm_init(&((data->l2cap_info).rfcomm_info));
+
+	/*init_rfcomm_state((data->l2cap_info).rfcomm_info.rfcomm_state);
+	init_rfcomm_transition((data->l2cap_info).rfcomm_info.rfcomm_state_transition);*/
 
 	set_l2cap_len(l2cap_pkt_buff,CTRL_SIG_HEADER_SIZE + payload);
 	set_l2cap_channel_id(l2cap_pkt_buff,CHID_SIGNALING_CHANNEL);
@@ -1506,7 +1512,6 @@ void rfcomm_connect_request(bdaddr_t bdaddr,uint16_t channel_id) {
 	uint8_t i = 0;
 	int8_t conn_index = 0;
 	struct l2cap_conn *node;
-	char tmpbuff[20];
 
 	conn_index = get_index_from_connection_info(
 										conn_info,

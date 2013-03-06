@@ -93,6 +93,8 @@ typedef enum rfcomm_state_transition {
 struct rfcomm_info {
 	struct rfcomm_config_options rfcomm_conf_opt;
 	uint8_t dlci;
+
+	uint8_t credit_cnt;
 	RFCOMM_STATE rfcomm_state;
 	RFCOMM_STATE_TRANSITION rfcomm_state_transition;
 };
@@ -127,6 +129,8 @@ typedef enum pn_offset_conf {
 	CREDITS_ISSUED_OFFSET
 } PN_OFFSET_CONF;
 
+#define PN_CREDIT_SUPPORT_REQ	0xF
+#define PN_CREDIT_SUPPORT_ACK	0xE
 
 typedef enum msc_param_offset {
 	MSC_ADDRESS_FIELD_OFFSET,
@@ -551,65 +555,64 @@ typedef enum rpn_flow_control {
 		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + param_num)))
 
 	
-#define get_rfcomm_msg_dlci_conf(config)	\
+#define get_rfcomm_msg_pn_dlci_conf(config)	\
 			(config[DLCI_OFFSET])
 
-#define get_rfcomm_msg_uih_frame_conf(config)	\
+#define get_rfcomm_msg_pn_uih_frame_conf(config)	\
 			((config[CL_AND_FRAME_OFFSET]) & 0xF)
 
-#define get_rfcomm_msg_credit_conf(config)	\
+#define get_rfcomm_msg_pn_credit_support_conf(config)	\
 			(((config[CL_AND_FRAME_OFFSET]) & 0xF0)>>4)
 
-#define get_rfcomm_msg_priority_conf(config)	\
+#define get_rfcomm_msg_pn_priority_conf(config)	\
 			(config[PRIORITY_OFFSET])
 
-#define get_rfcomm_msg_timer_ack_conf(config)	\
+#define get_rfcomm_msg_pn_timer_ack_conf(config)	\
 			(config[ACK_TIMER_OFFSET])
 
-#define get_rfcomm_msg_max_frame_size_conf(config)\
+#define get_rfcomm_msg_pn_max_frame_size_conf(config)\
 			((config[MAX_FRAME_SIZE_MSB_OFFSET]<<8)|	\
 				(config[MAX_FRAME_SIZE_LSB_OFFSET]))
 
-#define get_rfcomm_msg_max_frame_retrans_conf(config)	\
+#define get_rfcomm_msg_pn_max_frame_retrans_conf(config)	\
 			(config[MAX_RETRANS_OFFSET])
 
-#define get_rfcomm_msg_credits_issued_conf(config)	\
-			(config[CREDITS_ISSUED_SIZE_OFFSET])
+#define get_rfcomm_msg_pn_credits_issued_conf(config)	\
+			(config[CREDITS_ISSUED_OFFSET])
 
-#define set_rfcomm_msg_dlci_conf(config,dlci) \
+#define set_rfcomm_msg_pn_dlci_conf(config,dlci) \
 			((config[DLCI_OFFSET]) = (dlci))
 
-#define set_rfcomm_msg_uih_frame_conf(config,uih)	\
+#define set_rfcomm_msg_pn_uih_frame_conf(config,uih)	\
 			((config[CL_AND_FRAME_OFFSET]) = \
 				((config[CL_AND_FRAME_OFFSET]) & 0xF0)|(uih))
 
-#define set_rfcomm_msg_credit_conf(config,credit)	\
+#define set_rfcomm_msg_pn_credit_support_conf(config,credit_support)	\
 			((config[CL_AND_FRAME_OFFSET]) = \
-				((config[CL_AND_FRAME_OFFSET]) & 0x0F)|((credit)<<4))
+				((config[CL_AND_FRAME_OFFSET]) & 0x0F)|((credit_support)<<4))
 
-#define set_rfcomm_msg_priority_conf(config,priority) \
+#define set_rfcomm_msg_pn_priority_conf(config,priority) \
 			((config[PRIORITY_OFFSET]) = (priority))
 
-#define set_rfcomm_msg_timer_ack_conf(config,timer) \
+#define set_rfcomm_msg_pn_timer_ack_conf(config,timer) \
 			((config[ACK_TIMER_OFFSET]) = (timer))
 
-#define set_rfcomm_msg_max_frame_size_conf(config,frame_size) \
-			((config[MAX_FRAME_SIZE_MSB_OFFSET]) = ((frame_size & 0xF0)>>8), \
-			(config[MAX_FRAME_SIZE_LSB_OFFSET]) = (frame_size & 0x0F))
+#define set_rfcomm_msg_pn_max_frame_size_conf(config,frame_size) \
+			((config[MAX_FRAME_SIZE_MSB_OFFSET]) = ((frame_size)>>8), \
+			(config[MAX_FRAME_SIZE_LSB_OFFSET]) = (frame_size & 0xFF))
 
-#define set_rfcomm_msg_max_frame_retrans_conf(config,retrans_size)	\
+#define set_rfcomm_msg_pn_max_frame_retrans_conf(config,retrans_size)	\
 			((config[MAX_RETRANS_OFFSET]) = (retrans_size))
 
-
-#define set_rfcomm_msg_credits_issued_conf(config,credits_issued)	\
+#define set_rfcomm_msg_pn_credits_issued_conf(config,credits_issued)	\
 			((config[CREDITS_ISSUED_OFFSET]) = (credits_issued))
 
 
 #define is_valid_pn(config)	\
-	(((get_rfcomm_msg_uih_frame_conf(config)) == (USE_UIH)) && \
-		((get_rfcomm_msg_timer_ack_conf(config)) == (0)) && \
-		((get_rfcomm_msg_max_frame_retrans_conf(config)) == (0)) && \
-		((get_rfcomm_msg_credit_conf(config)) == (0xF)))
+	(((get_rfcomm_msg_pn_uih_frame_conf(config)) == (USE_UIH)) && \
+		((get_rfcomm_msg_pn_timer_ack_conf(config)) == (0)) && \
+		((get_rfcomm_msg_pn_max_frame_retrans_conf(config)) == (0)) && \
+		((get_rfcomm_msg_pn_credit_support_conf(config)) == (0xF)))
 
 
 #define get_rfcomm_msg_dlci_conf_pkt(rfcomm_pkt_buff)	\
@@ -783,23 +786,23 @@ typedef enum rpn_flow_control {
 */
 
 
-#define set_rfcomm_msg_dlci_conf_pkt(rfcomm_pkt_buff,dlci)	\
+#define set_rfcomm_msg_pn_dlci_conf_pkt(rfcomm_pkt_buff,dlci)	\
 	(write8_buff_le(rfcomm_pkt_buff,\
 		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + DLCI_OFFSET),\
 		dlci))
 
-#define set_rfcomm_msg_uih_credit_frame_conf_pkt(rfcomm_pkt_buff,uih_credit)	\
+#define set_rfcomm_msg_pn_uih_credit_frame_conf_pkt(rfcomm_pkt_buff,uih_credit)	\
 		(write8_buff_le(rfcomm_pkt_buff,\
 			(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff)+CL_AND_FRAME_OFFSET),\
 			(uih_credit)))
 
-#define set_rfcomm_msg_uih_frame_conf_pkt(rfcomm_pkt_buff,uih)	\
+#define set_rfcomm_msg_pn_uih_frame_conf_pkt(rfcomm_pkt_buff,uih)	\
 		(write8_buff_le(rfcomm_pkt_buff,\
 			(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff)+CL_AND_FRAME_OFFSET),\
 			((read8_buff_le(rfcomm_pkt_buff,\
 			get_rfcomm_msg_payload_offset(rfcomm_pkt_buff)+CL_AND_FRAME_OFFSET) & 0xF0)|uih)))
 
-#define set_rfcomm_msg_credit_conf_pkt(rfcomm_pkt_buff,credit)	\
+#define set_rfcomm_msg_pn_credit_support_conf_pkt(rfcomm_pkt_buff,credit)	\
 		(write8_buff_le(rfcomm_pkt_buff,\
 			(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff)+CL_AND_FRAME_OFFSET),\
 			(read8_buff_le(rfcomm_pkt_buff,\
@@ -807,45 +810,78 @@ typedef enum rpn_flow_control {
 												(credit<<4)))
 
 
-#define set_rfcomm_msg_priority_conf_pkt(rfcomm_pkt_buff,priority) \
+#define set_rfcomm_msg_pn_priority_conf_pkt(rfcomm_pkt_buff,priority) \
 		(write8_buff_le(rfcomm_pkt_buff,\
 			(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff)+PRIORITY_OFFSET),\
 			(priority)))
 
-#define set_rfcomm_msg_timer_ack_conf_pkt(rfcomm_pkt_buff,timer)	\
+#define set_rfcomm_msg_pn_timer_ack_conf_pkt(rfcomm_pkt_buff,timer)	\
 		(write8_buff_le(rfcomm_pkt_buff,\
 			(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff)+ACK_TIMER_OFFSET),\
 			(timer)))
 
-#define set_rfcomm_msg_max_frame_size_conf_lsb_pkt(rfcomm_pkt_buff,framesize) \
+#define set_rfcomm_msg_pn_max_frame_size_conf_lsb_pkt(rfcomm_pkt_buff,framesize) \
 		(write8_buff_le(rfcomm_pkt_buff,\
 			(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + MAX_FRAME_SIZE_LSB_OFFSET),\
 			(framesize & 0xFF)))
 
-#define set_rfcomm_msg_max_frame_size_conf_msb_pkt(rfcomm_pkt_buff,framesize) \
+#define set_rfcomm_msg_pn_max_frame_size_conf_msb_pkt(rfcomm_pkt_buff,framesize) \
 		(write8_buff_le(rfcomm_pkt_buff,\
 			(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + MAX_FRAME_SIZE_MSB_OFFSET),\
 			(framesize) >> 8))
 
-#define set_rfcomm_msg_max_frame_size_conf_pkt(rfcomm_pkt_buff,framesize) \
-		set_rfcomm_msg_max_frame_size_conf_lsb_pkt(rfcomm_pkt_buff,framesize);\
-		set_rfcomm_msg_max_frame_size_conf_msb_pkt(rfcomm_pkt_buff,framesize)
+#define set_rfcomm_msg_pn_max_frame_size_conf_pkt(rfcomm_pkt_buff,framesize) \
+		set_rfcomm_msg_pn_max_frame_size_conf_lsb_pkt(rfcomm_pkt_buff,framesize);\
+		set_rfcomm_msg_pn_max_frame_size_conf_msb_pkt(rfcomm_pkt_buff,framesize)
 
 
-#define set_rfcomm_msg_max_frame_retrans_conf_pkt(rfcomm_pkt_buff,retrans_size)	\
+#define set_rfcomm_msg_pn_max_frame_retrans_conf_pkt(rfcomm_pkt_buff,retrans_size)	\
 		(write8_buff_le(rfcomm_pkt_buff,\
 			(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + MAX_RETRANS_OFFSET),\
 			(retrans_size)))
 
 
-#define set_rfcomm_msg_credits_issued_conf_pkt(rfcomm_pkt_buff,credits_issued)	\
+#define set_rfcomm_msg_pn_credits_issued_conf_pkt(rfcomm_pkt_buff,credits_issued)	\
 		(write8_buff_le(rfcomm_pkt_buff,\
 			(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + CREDITS_ISSUED_OFFSET),\
 			(credits_issued)))
 
-#define get_rfcomm_msg_credits_issued_conf_pkt(rfcomm_pkt_buff)	\
+#define get_rfcomm_msg_pn_credits_issued_conf_pkt(rfcomm_pkt_buff)	\
 	(read8_buff_le(rfcomm_pkt_buff,\
 		(get_rfcomm_msg_payload_offset(rfcomm_pkt_buff) + CREDITS_ISSUED_OFFSET)))
+
+
+#define set_rfcomm_msg_rpn_baud_conf(config,baud)	\
+			((config[RPN_BAUD_RATE_FIELD_OFFSET]) = (baud))
+
+#define set_rfcomm_msg_rpn_data_bits_conf(config,data_bits)	\
+			((config[RPN_DATA_START_STOP_PARITY_FIELD_OFFSET]) = \
+				((config[RPN_DATA_START_STOP_PARITY_FIELD_OFFSET] & ~RPN_DATA_MASK)|(data_bits)))
+
+#define set_rfcomm_msg_rpn_stop_conf(config,stop_bit)	\
+			((config[RPN_DATA_START_STOP_PARITY_FIELD_OFFSET]) = \
+				((config[RPN_DATA_START_STOP_PARITY_FIELD_OFFSET] & ~RPN_STOP_MASK) | ( stop_bit<<2)))
+
+#define set_rfcomm_msg_rpn_parity_conf(config,parity_bit)	\
+			((config[RPN_DATA_START_STOP_PARITY_FIELD_OFFSET]) = \
+				((config[RPN_DATA_START_STOP_PARITY_FIELD_OFFSET] & ~RPN_PARITY_BIT_MASK) | ( parity_bit<<3)))
+
+#define set_rfcomm_msg_rpn_parity_type_conf(config,parity_type)	\
+			((config[RPN_DATA_START_STOP_PARITY_FIELD_OFFSET]) = \
+				((config[RPN_DATA_START_STOP_PARITY_FIELD_OFFSET] & ~RPN_PARITY_TYPE_MASK) | ( parity_type<<4)))
+
+#define set_rfcomm_msg_rpn_flow_control_conf(config,flow_control)	\
+			((config[RPN_FLOW_CTRL_FIELD_OFFSET]) = (RPN_FC_MASK & flow_control)
+
+#define set_rfcomm_msg_rpn_xon_char_conf(config,xon)	\
+			((config[RPN_HW_XON_FIELD_OFFSET]) = (xon))
+
+#define set_rfcomm_msg_rpn_xoff_char_conf(config,xoff)	\
+			((config[RPN_HW_XOFF_FIELD_OFFSET]) = (xoff))
+
+#define set_rfcomm_msg_rpn_pm_conf(config,pm)	\
+			((config[RPN_PM_FIELD_LSB_OFFSET]) = (pm & 0xFF); \
+			 ((config[RPN_PM_FIELD_MSB_OFFSET]) = (pm >> 8)
 
 
 #define get_rfcomm_msg_rpn_dlci_conf_pkt(rfcomm_pkt_buff)	\
@@ -1122,6 +1158,7 @@ uint8_t get_rfcomm_len_size(uint8_t *rfcomm_pkt_buff);
 uint8_t get_rfcomm_payload_len(uint8_t *rfcomm_pkt_buff);
 void dump_pkt(uint8_t *rfcomm_pkt_buff,uint8_t start_index,uint8_t len);
 uint8_t get_rfcomm_fcs(uint8_t *rfcomm_pkt_buff);
+
 void create_credit_pkt(uint8_t *rfcomm_pkt_buff,
 					uint8_t chaddr,
 					uint16_t len,
@@ -1129,6 +1166,15 @@ void create_credit_pkt(uint8_t *rfcomm_pkt_buff,
 					uint8_t credits
 					);
 
+void create_pn_msg(
+				uint8_t *rfcomm_pkt_buff,
+				uint8_t cmdresp,
+				uint8_t *pn_config
+				);
+
+void create_rpn_msg(uint8_t *rfcomm_pkt_buff,
+					uint8_t cmdresp,
+					uint8_t *rpn_config);
 void create_msc_msg(
 					uint8_t *rfcomm_pkt_buff,
 					uint8_t cmdresp,
@@ -1144,9 +1190,44 @@ void create_rfcomm_pkt(
 					RFCOMM_FRAME_TYPE rfcomm_frame_type
 					);
 
+void create_test_msg(
+					uint8_t *rfcomm_pkt_buff,
+					uint8_t cmdresp,
+					uint8_t *buff,
+					uint8_t len
+					);
+
+void create_cld_msg(
+					uint8_t *rfcomm_pkt_buff,
+					uint8_t cmdresp
+					);
+
+void create_psc_msg(
+					uint8_t *rfcomm_pkt_buff,
+					uint8_t cmdresp
+					);
+
+void create_fcon_msg(
+					uint8_t *rfcomm_pkt_buff,
+					uint8_t cmdresp
+					);
+
+void create_fcoff_msg(
+				uint8_t *rfcomm_pkt_buff,
+				uint8_t cmdresp
+				);
+
+void create_nsc_msg(
+				uint8_t *rfcomm_pkt_buff,
+				uint8_t cmdresp,
+				uint8_t cmdtype
+				);
+
 void set_rfcomm_fcs(uint8_t *rfcomm_pkt_buff);
 
 uint8_t get_rfcomm_pkt_size(uint8_t *rfcomm_pkt_buff);
 
+void rfcomm_connect_request(bdaddr_t bdaddr,uint16_t channel_id);
+void rfcomm_init(struct rfcomm_info *rfcomm_info);
 
 #endif

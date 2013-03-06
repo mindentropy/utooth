@@ -28,6 +28,31 @@ const unsigned char crctable[256] = {
 	 0xBD, 0x2C, 0x5E, 0xCF
 };
 
+
+
+void rfcomm_init(struct rfcomm_info *rfcomm_info) {
+	rfcomm_info->credit_cnt = MAX_CREDIT_CNT;
+	init_rfcomm_state(rfcomm_info->rfcomm_state);
+	init_rfcomm_transition(rfcomm_info->rfcomm_state_transition);
+
+
+	/* Initialize pn */
+	set_rfcomm_msg_pn_dlci_conf(rfcomm_info->rfcomm_conf_opt.pn_config,20);//Use a dlci generator.
+	set_rfcomm_msg_pn_uih_frame_conf(rfcomm_info->rfcomm_conf_opt.pn_config,0);
+	set_rfcomm_msg_pn_credit_support_conf(rfcomm_info->rfcomm_conf_opt.pn_config,0xF);
+	set_rfcomm_msg_pn_priority_conf(rfcomm_info->rfcomm_conf_opt.pn_config,7);
+
+	set_rfcomm_msg_pn_timer_ack_conf(rfcomm_info->rfcomm_conf_opt.pn_config,0);
+	set_rfcomm_msg_pn_max_frame_size_conf(rfcomm_info->rfcomm_conf_opt.pn_config,336);
+	set_rfcomm_msg_pn_max_frame_retrans_conf(rfcomm_info->rfcomm_conf_opt.pn_config,0);
+	set_rfcomm_msg_pn_credits_issued_conf(rfcomm_info->rfcomm_conf_opt.pn_config,7);
+
+
+	/* Initialize rpn  */
+
+
+}
+
 uint8_t verify_fcs(uint8_t *rfcomm_pkt_buff,uint8_t len,uint8_t recvd_fcs) {
 	uint8_t FCS = 0xFF;
 
@@ -269,7 +294,29 @@ void create_pn_msg(
 	disable_rfcomm_msg_type_len_ea(rfcomm_pkt_buff);
 	set_rfcomm_msg_type_len(rfcomm_pkt_buff,8);
 
-	set_rfcomm_msg_dlci_conf_pkt(rfcomm_pkt_buff,20);
+	set_rfcomm_msg_pn_dlci_conf_pkt(rfcomm_pkt_buff,
+						get_rfcomm_msg_pn_dlci_conf(pn_config));
+	set_rfcomm_msg_pn_uih_frame_conf_pkt(rfcomm_pkt_buff,
+						get_rfcomm_msg_pn_uih_frame_conf(pn_config));
+
+
+	set_rfcomm_msg_pn_credit_support_conf_pkt(rfcomm_pkt_buff,
+						get_rfcomm_msg_pn_credit_support_conf(pn_config));
+
+
+	set_rfcomm_msg_pn_priority_conf_pkt(rfcomm_pkt_buff,
+						get_rfcomm_msg_pn_priority_conf(pn_config));
+
+	//ack timer set to 0.
+	set_rfcomm_msg_pn_max_frame_size_conf_pkt(rfcomm_pkt_buff,
+						get_rfcomm_msg_pn_max_frame_size_conf(pn_config));
+
+	set_rfcomm_msg_pn_max_frame_retrans_conf_pkt(rfcomm_pkt_buff,
+						get_rfcomm_msg_pn_max_frame_retrans_conf(pn_config));
+	set_rfcomm_msg_pn_credits_issued_conf_pkt(rfcomm_pkt_buff,
+						get_rfcomm_msg_pn_credits_issued_conf(pn_config));
+
+/*	set_rfcomm_msg_dlci_conf_pkt(rfcomm_pkt_buff,20);
 	set_rfcomm_msg_uih_frame_conf_pkt(rfcomm_pkt_buff,0);
 	set_rfcomm_msg_credit_conf_pkt(rfcomm_pkt_buff,0xF);
 	set_rfcomm_msg_priority_conf_pkt(rfcomm_pkt_buff,7);
@@ -277,7 +324,7 @@ void create_pn_msg(
 	//ack timer set to 0.
 	set_rfcomm_msg_max_frame_size_conf_pkt(rfcomm_pkt_buff,336);
 	set_rfcomm_msg_max_frame_retrans_conf_pkt(rfcomm_pkt_buff,0);
-	set_rfcomm_msg_credits_issued_conf_pkt(rfcomm_pkt_buff,7);
+	set_rfcomm_msg_credits_issued_conf_pkt(rfcomm_pkt_buff,7);*/
 	
 }
 
@@ -606,9 +653,3 @@ void create_rfcomm_pkt(
 }
 
 
-void process_rfcomm_pkt(
-				uint8_t *rfcomm_pkt_buff,
-				uint16_t pkt_len
-				) {
-	
-}
