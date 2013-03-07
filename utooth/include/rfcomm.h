@@ -16,6 +16,7 @@
 #define RFCOMM_RPN_DATA_BITS	BITS8
 #define RFCOMM_RPN_STOP_BIT		0
 #define	RFCOMM_RPN_PARITY		0
+#define RFCOMM_RPN_PARITY_TYPE	ODD_PARITY
 #define RFCOMM_RPN_FC			0
 #define RFCOMM_RPN_XON_CHAR		17
 #define RFCOMM_RPN_XOFF_CHAR	19
@@ -31,7 +32,9 @@
 /*** RFCOMM PN Settings Start ***/
 #define RFCOMM_PN_UIH_OPTION		0
 #define RFCOMM_PN_PRIORITY			7
+#define RFCOMM_PN_ACK_TIMER			0
 #define RFCOMM_PN_MAX_FRAME_SIZE	336
+#define RFCOMM_PN_MAX_RESTRANS		0
 #define RFCOMM_PN_INITIAL_CREDITS	7
 /*** RFCOMM PN Settings End ***/
 
@@ -916,6 +919,37 @@ typedef enum rpn_flow_control {
 			((config[RPN_PM_FIELD_LSB_OFFSET]) = (pm & 0xFF); \
 			 ((config[RPN_PM_FIELD_MSB_OFFSET]) = (pm >> 8)
 
+
+#define get_rfcomm_msg_rpn_baud_conf(config)	\
+			  (config[RPN_BAUD_RATE_FIELD_OFFSET])
+
+#define get_rfcomm_msg_rpn_data_bits_conf(config)	\
+		((config[RPN_DATA_START_STOP_PARITY_FIELD_OFFSET]) & (RPN_DATA_MASK))
+
+
+#define get_rfcomm_msg_rpn_stop_bit_conf(config)	\
+		(((config[RPN_DATA_START_STOP_PARITY_FIELD_OFFSET]) & (RPN_STOP_MASK))>>2)
+
+#define get_rfcomm_msg_rpn_parity_bit_conf(config)	\
+		(((config[RPN_DATA_START_STOP_PARITY_FIELD_OFFSET]) & (RPN_PARITY_BIT_MASK))>>3)
+
+#define get_rfcomm_msg_rpn_parity_type_conf(config)	\
+		(((config[RPN_DATA_START_STOP_PARITY_FIELD_OFFSET]) & (RPN_PARITY_TYPE_MASK))>>4)
+
+#define get_rfcomm_msg_rpn_fc_conf(config)	\
+		(((config[RPN_FLOW_CTRL_FIELD_OFFSET]) & RPN_FC_MASK))
+
+#define get_rfcomm_msg_rpn_xon_conf(config)	\
+		(config[RPN_HW_XON_FIELD_OFFSET])
+
+#define get_rfcomm_msg_rpn_xoff_conf(config)	\
+		(config[RPN_HW_XOFF_FIELD_OFFSET])
+
+#define get_rfcomm_msg_rpn_pm_lsb_conf(config)	\
+		(config[RPN_PM_FIELD_LSB_OFFSET])
+
+#define get_rfcomm_msg_rpn_pm_msb_conf(config)	\
+		(config[RPN_PM_FIELD_MSB_OFFSET])
 
 #define get_rfcomm_msg_rpn_dlci_conf_pkt(rfcomm_pkt_buff)	\
 	(read8_buff_le(rfcomm_pkt_buff,\

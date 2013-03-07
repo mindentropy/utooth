@@ -672,7 +672,7 @@ struct l2cap_info {
 
 struct l2cap_conn {
 	struct list_head list;
-	uint16_t channel_id; //Represent the channel endpoint. Single channel can
+	uint16_t local_channel_id; //Represent the channel endpoint. Single channel can
 						// have multiple endpoints. Hence its present in a pool.
 						// This is my local host channel id.
 	

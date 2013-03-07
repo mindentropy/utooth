@@ -37,56 +37,62 @@ void rfcomm_init(struct rfcomm_info *rfcomm_info) {
 
 
 	// Initialize pn
-/*	set_rfcomm_msg_pn_dlci_conf(rfcomm_info->rfcomm_conf_opt.pn_config,20);//Use a dlci generator.
-	set_rfcomm_msg_pn_uih_frame_conf(rfcomm_info->rfcomm_conf_opt.pn_config,0);
-	set_rfcomm_msg_pn_credit_support_conf(rfcomm_info->rfcomm_conf_opt.pn_config,0xF);
-	set_rfcomm_msg_pn_priority_conf(rfcomm_info->rfcomm_conf_opt.pn_config,7);
-
-	set_rfcomm_msg_pn_timer_ack_conf(rfcomm_info->rfcomm_conf_opt.pn_config,0);
-	set_rfcomm_msg_pn_max_frame_size_conf(rfcomm_info->rfcomm_conf_opt.pn_config,336);
-	set_rfcomm_msg_pn_max_frame_retrans_conf(rfcomm_info->rfcomm_conf_opt.pn_config,0);
-	set_rfcomm_msg_pn_credits_issued_conf(rfcomm_info->rfcomm_conf_opt.pn_config,7);
+	set_rfcomm_msg_pn_dlci_conf(rfcomm_info->rfcomm_conf_opt.pn_config,20);//Use a dlci generator.
+	set_rfcomm_msg_pn_uih_frame_conf(rfcomm_info->rfcomm_conf_opt.pn_config,
+												RFCOMM_PN_UIH_OPTION);
+	set_rfcomm_msg_pn_credit_support_conf(rfcomm_info->rfcomm_conf_opt.pn_config,
+												PN_CREDIT_SUPPORT_REQ);
+	set_rfcomm_msg_pn_priority_conf(rfcomm_info->rfcomm_conf_opt.pn_config,
+												RFCOMM_PN_PRIORITY);
+	set_rfcomm_msg_pn_timer_ack_conf(rfcomm_info->rfcomm_conf_opt.pn_config,
+										RFCOMM_PN_ACK_TIMER);
+	set_rfcomm_msg_pn_max_frame_size_conf(rfcomm_info->rfcomm_conf_opt.pn_config,
+										RFCOMM_PN_MAX_FRAME_SIZE);
+	set_rfcomm_msg_pn_max_frame_retrans_conf(rfcomm_info->rfcomm_conf_opt.pn_config,
+										RFCOMM_PN_MAX_RESTRANS);
+	set_rfcomm_msg_pn_credits_issued_conf(rfcomm_info->rfcomm_conf_opt.pn_config,
+										RFCOMM_PN_INITIAL_CREDITS);
 
 
 	// Initialize rpn
 	set_rfcomm_msg_rpn_baud_conf(
 		rfcomm_info->rfcomm_conf_opt.rpn_config,
-		B115200);
+		RFCOMM_RPN_BAUD);
 
 	set_rfcomm_msg_rpn_data_bits_conf(
 		rfcomm_info->rfcomm_conf_opt.rpn_config,
-		BITS8);
+		RFCOMM_RPN_DATA_BITS);
 	set_rfcomm_msg_rpn_stop_conf(
 		rfcomm_info->rfcomm_conf_opt.rpn_config,
-		0);
+		RFCOMM_RPN_STOP_BIT);
 
 	set_rfcomm_msg_rpn_parity_conf(
 		rfcomm_info->rfcomm_conf_opt.rpn_config,
-		0);
+		RFCOMM_RPN_PARITY);
+
+	set_rfcomm_msg_rpn_parity_type_conf(
+		rfcomm_info->rfcomm_conf_opt.rpn_config,
+		RFCOMM_RPN_PARITY_TYPE);
 
 	set_rfcomm_msg_rpn_flow_control_conf(
 		rfcomm_info->rfcomm_conf_opt.rpn_config,
-		0);
+		RFCOMM_RPN_FC);
 
 	set_rfcomm_msg_rpn_xon_char_conf(
 		rfcomm_info->rfcomm_conf_opt.rpn_config,
-		17);
+		RFCOMM_RPN_XON_CHAR);
 
 	set_rfcomm_msg_rpn_xoff_char_conf(
 		rfcomm_info->rfcomm_conf_opt.rpn_config,
-		19);
+		RFCOMM_RPN_XOFF_CHAR);
 
 	set_rfcomm_msg_rpn_pm_lsb_conf(
 		rfcomm_info->rfcomm_conf_opt.rpn_config,
-		PM_BR_MASK|PM_DB_MASK|PM_SB_MASK|PM_P_MASK|PM_PT_MASK|
-		PM_XON_MASK|PM_XOFF_MASK);
-
-
+		RFCOMM_RPN_PM_LSB);
+		
 	set_rfcomm_msg_rpn_pm_msb_conf(
-			rfcomm_info->rfcomm_conf_opt.rpn_config,
-			PM_XI_MASK|PM_XO_MASK|PM_RTRI_MASK|PM_RTRO_MASK|
-			PM_RTCI_MASK|PM_RTCO_MASK);*/
-	
+		rfcomm_info->rfcomm_conf_opt.rpn_config,
+		RFCOMM_RPN_PM_MSB);
 }
 
 uint8_t verify_fcs(uint8_t *rfcomm_pkt_buff,uint8_t len,uint8_t recvd_fcs) {
@@ -387,23 +393,36 @@ void create_rpn_msg(uint8_t *rfcomm_pkt_buff,
 	disable_rfcomm_msg_rpn_dlci_ea_conf_pkt(rfcomm_pkt_buff);
 	enable_rfcomm_msg_rpn_dlci_cr(rfcomm_pkt_buff);
 
-	set_rfcomm_msg_rpn_baud_rate_conf_pkt(rfcomm_pkt_buff,B115200);
-	set_rfcomm_msg_rpn_data_conf_pkt(rfcomm_pkt_buff,BITS8);
-	set_rfcomm_msg_rpn_stop_bit_conf_pkt(rfcomm_pkt_buff,0);
-	set_rfcomm_msg_rpn_parity_bit_conf_pkt(rfcomm_pkt_buff,0);
-	set_rfcomm_msg_rpn_flow_ctrl_conf_pkt(rfcomm_pkt_buff,0);
+	set_rfcomm_msg_rpn_baud_rate_conf_pkt(rfcomm_pkt_buff,
+					get_rfcomm_msg_rpn_baud_conf(rpn_config));
+
+	set_rfcomm_msg_rpn_data_conf_pkt(rfcomm_pkt_buff,
+					get_rfcomm_msg_rpn_data_bits_conf(rpn_config));
+
+	set_rfcomm_msg_rpn_stop_bit_conf_pkt(rfcomm_pkt_buff,
+					get_rfcomm_msg_rpn_stop_bit_conf(rpn_config));
+
+	set_rfcomm_msg_rpn_parity_bit_conf_pkt(rfcomm_pkt_buff,
+					get_rfcomm_msg_rpn_parity_bit_conf(rpn_config));
+
+	set_rfcomm_msg_rpn_parity_type_conf_pkt(rfcomm_pkt_buff,
+					get_rfcomm_msg_rpn_parity_type_conf(rpn_config));
+
+	set_rfcomm_msg_rpn_flow_ctrl_conf_pkt(rfcomm_pkt_buff,
+					get_rfcomm_msg_rpn_fc_conf(rpn_config));
+
+	set_rfcomm_msg_rpn_hw_xon_conf_pkt(rfcomm_pkt_buff,
+					get_rfcomm_msg_rpn_xon_conf(rpn_config));
 
 
-	set_rfcomm_msg_rpn_hw_xon_conf_pkt(rfcomm_pkt_buff,17);
-	set_rfcomm_msg_rpn_hw_xoff_conf_pkt(rfcomm_pkt_buff,19);
+	set_rfcomm_msg_rpn_hw_xoff_conf_pkt(rfcomm_pkt_buff,
+					get_rfcomm_msg_rpn_xoff_conf(rpn_config));
 
 	set_rfcomm_msg_rpn_pm_lsb_conf_pkt(rfcomm_pkt_buff,
-			PM_BR_MASK|PM_DB_MASK|PM_SB_MASK|PM_P_MASK|PM_PT_MASK|
-			PM_XON_MASK|PM_XOFF_MASK);
+					get_rfcomm_msg_rpn_pm_lsb_conf(rpn_config));
 
 	set_rfcomm_msg_rpn_pm_msb_conf_pkt(rfcomm_pkt_buff,
-			PM_XI_MASK|PM_XO_MASK|PM_RTRI_MASK|PM_RTRO_MASK|
-			PM_RTCI_MASK|PM_RTCO_MASK);
+					get_rfcomm_msg_rpn_pm_msb_conf(rpn_config));
 }
 
 

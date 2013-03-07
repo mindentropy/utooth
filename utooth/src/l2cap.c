@@ -21,6 +21,7 @@ uint16_t tmp_chid = 0;
 
 struct l2cap_conn l2cap_conn_pool[L2CAP_CONN_POOL_SIZE];
 struct list_head l2cap_empty_pool;
+extern testbdaddr;
 
 
 uint8_t gen_l2cap_sig_id() {
@@ -60,7 +61,7 @@ struct l2cap_conn * get_l2cap_conn_from_channel_id(
 	while(node != NULL) {
 		conn = (struct l2cap_conn *)node;
 
-		if(conn->channel_id == channel_id)
+		if(conn->local_channel_id == channel_id)
 			return conn;
 		
 		node = node->next;
@@ -165,7 +166,7 @@ void process_connection_request(
 						data);
 	
 
-	data->channel_id = channelid;
+	data->local_channel_id = channelid;
 
 	sprintf(tmpbuff,"chid %x\n",channelid);
 	halUsbSendStr(tmpbuff);
@@ -255,7 +256,7 @@ process_l2cap_pkt(uint16_t conn_handle,
 					halUsbSendChar('\n');
 					
 					dcid = gen_l2cap_channel_id(); //Generate a cid for myself.
-					tmp_chid = dcid;
+					//tmp_chid = dcid;
 
 					process_connection_request(
 							get_acl_conn_handle(conn_handle),
@@ -288,7 +289,7 @@ process_l2cap_pkt(uint16_t conn_handle,
 					cmdid = get_l2cap_cmd_id(l2cap_pkt_buff);					
 					signal_len = get_l2cap_cmd_len(l2cap_pkt_buff);
 
-					sprintf(tmpbuff,"did:%x,sid:%x,res:%x,stat:%x\n",
+					sprintf(tmpbuff,"dcid:%x,scid:%x,res:%x,stat:%x\n",
 							get_l2cap_cmd_conn_resp_dcid(l2cap_pkt_buff),
 							tmp_chid = get_l2cap_cmd_conn_resp_scid(l2cap_pkt_buff),
 							get_l2cap_cmd_conn_resp_result(l2cap_pkt_buff),
@@ -411,7 +412,6 @@ process_l2cap_pkt(uint16_t conn_handle,
 									cmd_len));
 
 					halUsbSendChar('\n');
-
 
 					break;
 				case SIG_CONFIGURATION_RESPONSE:
@@ -887,7 +887,6 @@ process_l2cap_pkt(uint16_t conn_handle,
 										*/
 										
 										if(get_rfcomm_msg_credit_conf_pkt(tmp) == 0xE) {
-											halUsbSendStr("pn resp\n");
 
 
 											halUsbSendStr("<MSC cmd\n");
@@ -915,7 +914,7 @@ process_l2cap_pkt(uint16_t conn_handle,
 														MSG_CMD,
 														UIH);
 												
-												dump_rfcomm_pkt(tmp);
+												//dump_rfcomm_pkt(tmp);
 												//dump_data_payload(tmp);
 
 												create_l2cap_bframe_rfcomm_pkt(l2cap_pkt_buff,conn);
@@ -1003,7 +1002,9 @@ process_l2cap_pkt(uint16_t conn_handle,
 												halUsbSendStr("<RPN\n");
 												create_rpn_msg(tmp,
 															MSG_CMD,
-															0);
+														(conn->l2cap_info).rfcomm_info
+														.rfcomm_conf_opt
+														.rpn_config);
 
 												create_rfcomm_pkt(tmp,
 														get_rfcomm_server_ch_addr(tmp),
@@ -1290,6 +1291,7 @@ void l2cap_connect_request(bdaddr_t bdaddr,
 					PSM_TYPE psm_type) {
 	struct l2cap_conn *data;
 	int8_t index = 0;
+	char tmpbuff[20];
 
 	uint16_t payload = CTRL_SIG_CMD_CONN_REQ_PAYLOAD_SIZE;
 
@@ -1309,7 +1311,10 @@ void l2cap_connect_request(bdaddr_t bdaddr,
 	
 
 	(data->l2cap_info).l2cap_state = WAIT_CONNECT_RSP;
-	tmp_chid = data->channel_id = gen_l2cap_channel_id();
+	tmp_chid = data->local_channel_id = gen_l2cap_channel_id();
+
+	sprintf(tmpbuff,"chid: %x\n",tmp_chid);
+	halUsbSendStr(tmpbuff);
 
 	halUsbSendStr("Setting local\n");
 	(data->l2cap_info).connect_initiate = LOCAL;
@@ -1329,7 +1334,7 @@ void l2cap_connect_request(bdaddr_t bdaddr,
 	set_l2cap_signal_cmd_id(l2cap_pkt_buff,gen_l2cap_sig_id());
 	set_l2cap_signal_cmd_len(l2cap_pkt_buff,payload);
 	set_l2cap_signal_cmd_conn_req_PSM(l2cap_pkt_buff,psm_type);
-	set_l2cap_signal_cmd_conn_req_scid(l2cap_pkt_buff,data->channel_id);
+	set_l2cap_signal_cmd_conn_req_scid(l2cap_pkt_buff,data->local_channel_id);
 
 	send_hci_acl_header(conn_info[index].connection_handle,
 						PB_FIRST_AUTO_FLUSH_PKT,

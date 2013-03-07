@@ -44,6 +44,7 @@ TODO:
 extern const uint8_t  cc256x_init_script[];
 extern const uint32_t cc256x_init_script_size;
 
+bdaddr_t testbdaddr;
 
 #define wait_until_idle()	\
 	while(sys_stat != STAT_IDLE)	\
@@ -145,11 +146,10 @@ void l2cap_pong_cb(struct l2cap_info *l2cap_info,
 }
 
 int main(void) {
-	//char tmpbuff[20];
+	char tmpbuff[20];
 	uint8_t i = 0;
 //	uint8_t row = 0, col = 0,contrast_level = 70;
 
-	bdaddr_t testbdaddr;
 	WDTCTL = WDTPW | WDTHOLD;
 	
  	/*
@@ -244,7 +244,13 @@ int main(void) {
 			/*reset_inquiry_results();
 			send_inquiry_request();*/
 			halUsbSendStr("rfcommconn\n");
+
+			sprintf(tmpbuff,"chid : %x\n",tmp_chid);
+			halUsbSendStr(tmpbuff);
+
 			rfcomm_connect_request(testbdaddr,tmp_chid);
+
+			wait_until_idle();
 		}
 
 		/*if(!(halButtonsPressed() & BUTTON_S2)) {
