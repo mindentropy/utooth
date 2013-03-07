@@ -36,8 +36,8 @@ void rfcomm_init(struct rfcomm_info *rfcomm_info) {
 	init_rfcomm_transition(rfcomm_info->rfcomm_state_transition);
 
 
-	/* Initialize pn */
-	set_rfcomm_msg_pn_dlci_conf(rfcomm_info->rfcomm_conf_opt.pn_config,20);//Use a dlci generator.
+	// Initialize pn
+/*	set_rfcomm_msg_pn_dlci_conf(rfcomm_info->rfcomm_conf_opt.pn_config,20);//Use a dlci generator.
 	set_rfcomm_msg_pn_uih_frame_conf(rfcomm_info->rfcomm_conf_opt.pn_config,0);
 	set_rfcomm_msg_pn_credit_support_conf(rfcomm_info->rfcomm_conf_opt.pn_config,0xF);
 	set_rfcomm_msg_pn_priority_conf(rfcomm_info->rfcomm_conf_opt.pn_config,7);
@@ -48,9 +48,45 @@ void rfcomm_init(struct rfcomm_info *rfcomm_info) {
 	set_rfcomm_msg_pn_credits_issued_conf(rfcomm_info->rfcomm_conf_opt.pn_config,7);
 
 
-	/* Initialize rpn  */
+	// Initialize rpn
+	set_rfcomm_msg_rpn_baud_conf(
+		rfcomm_info->rfcomm_conf_opt.rpn_config,
+		B115200);
+
+	set_rfcomm_msg_rpn_data_bits_conf(
+		rfcomm_info->rfcomm_conf_opt.rpn_config,
+		BITS8);
+	set_rfcomm_msg_rpn_stop_conf(
+		rfcomm_info->rfcomm_conf_opt.rpn_config,
+		0);
+
+	set_rfcomm_msg_rpn_parity_conf(
+		rfcomm_info->rfcomm_conf_opt.rpn_config,
+		0);
+
+	set_rfcomm_msg_rpn_flow_control_conf(
+		rfcomm_info->rfcomm_conf_opt.rpn_config,
+		0);
+
+	set_rfcomm_msg_rpn_xon_char_conf(
+		rfcomm_info->rfcomm_conf_opt.rpn_config,
+		17);
+
+	set_rfcomm_msg_rpn_xoff_char_conf(
+		rfcomm_info->rfcomm_conf_opt.rpn_config,
+		19);
+
+	set_rfcomm_msg_rpn_pm_lsb_conf(
+		rfcomm_info->rfcomm_conf_opt.rpn_config,
+		PM_BR_MASK|PM_DB_MASK|PM_SB_MASK|PM_P_MASK|PM_PT_MASK|
+		PM_XON_MASK|PM_XOFF_MASK);
 
 
+	set_rfcomm_msg_rpn_pm_msb_conf(
+			rfcomm_info->rfcomm_conf_opt.rpn_config,
+			PM_XI_MASK|PM_XO_MASK|PM_RTRI_MASK|PM_RTRO_MASK|
+			PM_RTCI_MASK|PM_RTCO_MASK);*/
+	
 }
 
 uint8_t verify_fcs(uint8_t *rfcomm_pkt_buff,uint8_t len,uint8_t recvd_fcs) {

@@ -10,6 +10,31 @@
 #define FCS_PASS	1
 #define FCS_FAIL	0
 
+
+/***	RFCOMM RPN Settings Start  	***/
+#define RFCOMM_RPN_BAUD			B115200
+#define RFCOMM_RPN_DATA_BITS	BITS8
+#define RFCOMM_RPN_STOP_BIT		0
+#define	RFCOMM_RPN_PARITY		0
+#define RFCOMM_RPN_FC			0
+#define RFCOMM_RPN_XON_CHAR		17
+#define RFCOMM_RPN_XOFF_CHAR	19
+
+#define RFCOMM_RPN_PM_LSB		(PM_BR_MASK|PM_DB_MASK|PM_SB_MASK|\
+								PM_P_MASK|PM_PT_MASK|	\
+								PM_XON_MASK|PM_XOFF_MASK)
+
+#define RFCOMM_RPN_PM_MSB		(PM_XI_MASK|PM_XO_MASK|PM_RTRI_MASK|\
+								PM_RTRO_MASK|PM_RTCI_MASK|PM_RTCO_MASK)
+/***	RFCOMM RPN Settings End 	***/
+
+/*** RFCOMM PN Settings Start ***/
+#define RFCOMM_PN_UIH_OPTION		0
+#define RFCOMM_PN_PRIORITY			7
+#define RFCOMM_PN_MAX_FRAME_SIZE	336
+#define RFCOMM_PN_INITIAL_CREDITS	7
+/*** RFCOMM PN Settings End ***/
+
 typedef enum rfcomm_frame_type { 
 	SABM = 0x2F, //Set Asynchronous balanced mode.
 	UA   = 0x63, //Unnumbered Acknowledgement
@@ -871,13 +896,21 @@ typedef enum rpn_flow_control {
 				((config[RPN_DATA_START_STOP_PARITY_FIELD_OFFSET] & ~RPN_PARITY_TYPE_MASK) | ( parity_type<<4)))
 
 #define set_rfcomm_msg_rpn_flow_control_conf(config,flow_control)	\
-			((config[RPN_FLOW_CTRL_FIELD_OFFSET]) = (RPN_FC_MASK & flow_control)
+			((config[RPN_FLOW_CTRL_FIELD_OFFSET]) = (RPN_FC_MASK & flow_control))
 
 #define set_rfcomm_msg_rpn_xon_char_conf(config,xon)	\
 			((config[RPN_HW_XON_FIELD_OFFSET]) = (xon))
 
 #define set_rfcomm_msg_rpn_xoff_char_conf(config,xoff)	\
 			((config[RPN_HW_XOFF_FIELD_OFFSET]) = (xoff))
+
+
+#define set_rfcomm_msg_rpn_pm_lsb_conf(config,pm_lsb) \
+			((config[RPN_PM_FIELD_LSB_OFFSET]) = (pm_lsb))
+
+#define set_rfcomm_msg_rpn_pm_msb_conf(config,pm_msb) \
+			((config[RPN_PM_FIELD_MSB_OFFSET]) = (pm_msb))
+
 
 #define set_rfcomm_msg_rpn_pm_conf(config,pm)	\
 			((config[RPN_PM_FIELD_LSB_OFFSET]) = (pm & 0xFF); \
