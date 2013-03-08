@@ -275,12 +275,18 @@ process_l2cap_pkt(uint16_t conn_handle,
 						);
 						
 					
+					set_l2cap_state(
+							(conn->l2cap_info).l2cap_state,
+							CONFIG);
 					l2cap_config_request(
 							get_acl_conn_handle(conn_handle),
 							scid,
 							l2cap_pkt_buff
 						);
 		
+					set_l2cap_state(
+							(conn->l2cap_info).l2cap_state,
+							WAIT_CONFIG);
 							
 					break;
 				case SIG_CONNECTION_RESPONSE:
@@ -297,26 +303,55 @@ process_l2cap_pkt(uint16_t conn_handle,
 							);
 					halUsbSendStr(tmpbuff);
 					
-					conn = get_l2cap_conn_from_channel_id(conn_info,
-								get_acl_conn_handle(conn_handle),
-								get_l2cap_cmd_conn_resp_scid(l2cap_pkt_buff)
-								);
-					
-					if(conn != NULL) {
-						if((get_l2cap_cmd_conn_resp_result(l2cap_pkt_buff)) == 0) {
-								(conn->l2cap_info).l2cap_state = CONFIG;
-								(conn->l2cap_info).dcid = get_l2cap_cmd_conn_resp_dcid(l2cap_pkt_buff);
 
-								//Sending a configuration request.
-								halUsbSendStr("\nSend Conf Req\n");
-								l2cap_config_request(
+					switch(get_l2cap_cmd_conn_resp_result(l2cap_pkt_buff)) {
+						case CONNECTION_SUCCESSFUL:
+
+							conn = get_l2cap_conn_from_channel_id(conn_info,
 										get_acl_conn_handle(conn_handle),
-										get_l2cap_cmd_conn_resp_dcid(l2cap_pkt_buff),
-										l2cap_pkt_buff
+										get_l2cap_cmd_conn_resp_scid(l2cap_pkt_buff)
 										);
-						}
+							
+							if(conn != NULL) {
+								if((get_l2cap_cmd_conn_resp_result(l2cap_pkt_buff)) == 0) {
+										set_l2cap_state(
+													(conn->l2cap_info).l2cap_state,
+													CONFIG);
+
+										(conn->l2cap_info).dcid = 
+													get_l2cap_cmd_conn_resp_dcid(l2cap_pkt_buff);
+
+										//Sending a configuration request.
+										halUsbSendStr("\nSend Conf Req\n");
+										l2cap_config_request(
+												get_acl_conn_handle(conn_handle),
+												get_l2cap_cmd_conn_resp_dcid(l2cap_pkt_buff),
+												l2cap_pkt_buff
+												);
+
+										set_l2cap_state(
+													(conn->l2cap_info).l2cap_state,
+													WAIT_CONFIG);
+								}
+							}
+							halUsbSendChar('\n');
+
+							break;
+						case CONNECTION_PENDING:
+							set_l2cap_state(
+										(conn->l2cap_info).l2cap_state,
+										WAIT_CONNECT);
+							break;
+						case CONNECTION_REFUSED_PSM_NOT_SUPPORTED:
+						case CONNECTION_REFUSED_SECURITY_BLOCK:
+						case CONNECTION_REFUSED_NO_RESOURCES_AVAILABLE:
+							set_l2cap_state(
+									(conn->l2cap_info).l2cap_state,
+									CLOSED);
+							break;
 					}
-					halUsbSendChar('\n');
+
+
 
 					break;
 				case SIG_CONFIGURATION_REQUEST:
@@ -1309,8 +1344,8 @@ void l2cap_connect_request(bdaddr_t bdaddr,
 	add_to_pool_head(&(conn_info[index].l2cap_conn_pool),
 						data);
 	
+	set_l2cap_state((data->l2cap_info).l2cap_state,WAIT_CONNECT_RSP);
 
-	(data->l2cap_info).l2cap_state = WAIT_CONNECT_RSP;
 	tmp_chid = data->local_channel_id = gen_l2cap_channel_id();
 
 	sprintf(tmpbuff,"chid: %x\n",tmp_chid);

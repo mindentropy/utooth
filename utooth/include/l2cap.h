@@ -573,9 +573,13 @@ typedef enum {
 	WAIT_CONNECT,
 	WAIT_CONNECT_RSP,
 	CONFIG,
+	WAIT_CONFIG,
 	OPEN,
 	WAIT_DISCONNECT
 }L2CAP_STATE;
+
+#define set_l2cap_state(l2cap_state,state)	\
+	((l2cap_state) = (state))
 
 typedef enum frame_type {
 	IFRAME = 0x00,
