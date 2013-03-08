@@ -501,7 +501,7 @@ typedef enum channel_id_type {
 	CHID_NULL_ID = 0x0000,
 	CHID_SIGNALING_CHANNEL,
 	CHID_CONNECTIONLESS_RECEPTION_CHANNEL
-}CHANNEL_ID_TYPE;
+} CHANNEL_ID_TYPE;
 
 /* Control packet command codes */
 typedef enum control_packet_signals {
@@ -517,13 +517,13 @@ typedef enum control_packet_signals {
 	SIG_ECHO_RESPONSE,
 	SIG_INFO_REQUEST,
 	SIG_INFO_RESPONSE
-}CONTROL_PACKET_SIGNALS;
+} CONTROL_PACKET_SIGNALS;
 
 typedef enum disconnection_reason {
 	REASON_COMMAND_NOT_UNDERSTOOD =	0x0000,
 	REASON_SIGNAL_MTU_EXCEEDED,
 	REASON_INVALID_CID_IN_REQUEST
-}DISCONNECTION_REASON;
+} DISCONNECTION_REASON;
 
 typedef enum connection_response {
 	CONNECTION_SUCCESSFUL = 0x0000,
@@ -531,55 +531,65 @@ typedef enum connection_response {
 	CONNECTION_REFUSED_PSM_NOT_SUPPORTED,
 	CONNECTION_REFUSED_SECURITY_BLOCK,
 	CONNECTION_REFUSED_NO_RESOURCES_AVAILABLE
-}CONNECTION_RESPONSE;
+} CONNECTION_RESPONSE;
 
 typedef enum connection_response_status {
 	NO_FURTHER_INFORMATION_AVAILABLE = 0x0000,
 	AUTHENTICATION_PENDING,
 	AUTHORIZATION_PENDING
-}CONNECTION_RESPONSE_STATUS;
+} CONNECTION_RESPONSE_STATUS;
 
 typedef enum configuration_response_result {
 	CONFIG_SUCCESS = 0x0000,
 	FAILURE_UNACCEPTABLE_PARAMETERS,
 	FAILURE_REJECTED,
 	FAILURE_UNKNOWN_OPTIONS
-}CONFIGURATION_RESPONSE_RESULT;
+} CONFIGURATION_RESPONSE_RESULT;
 
 typedef enum infotype_request_response_def {
 	CONNECTIONLESS_MTU = 0x0001,
 	EXTENDED_FEATURES_SUPPORTED
-}INFORMATION_REQUEST_RESPONSE;
+} INFORMATION_REQUEST_RESPONSE;
 
 enum information_response_result {
 	INFO_SUCCESS= 0x0000,
 	INFO_NOT_SUPPORTED = 0x0001
-}INFORMATION_RESPONSE_RESULT;
+} INFORMATION_RESPONSE_RESULT;
 
 enum QoS_def {
 	NO_TRAFFIC = 0x00,
 	BEST_EFFORT,
 	GUARANTEED
-}QoS;
+} QoS;
 
 enum retransmission_flow_control_mode {
 	BASIC_L2CAP = 0x00, 
 	RETRANSMISSION,
 	FLOW_CONTROL
-}RETRANSMISSION_FLOW_CONTROL_MODE;
+} RETRANSMISSION_FLOW_CONTROL_MODE;
 
 typedef enum {
-	CLOSED,
-	WAIT_CONNECT,
-	WAIT_CONNECT_RSP,
-	CONFIG,
-	WAIT_CONFIG,
-	OPEN,
-	WAIT_DISCONNECT
-}L2CAP_STATE;
+	L2CAP_OPEN,
+	L2CAP_CLOSED,
+	L2CAP_CONFIG,
+	L2CAP_WAIT_CONNECT,
+	L2CAP_WAIT_CONNECT_RSP
+} L2CAP_STATE;
 
-#define set_l2cap_state(l2cap_state,state)	\
-	((l2cap_state) = (state))
+typedef enum {
+	L2CAP_NONE,
+	L2CAP_WAIT_DISCONNECT,
+	L2CAP_WAIT_CONFIG,
+	L2CAP_WAIT_SEND_CONFIG,
+	L2CAP_WAIT_CONFIG_REQ_RESP,
+	L2CAP_WAIT_CONFIG_RESP,
+	L2CAP_WAIT_CONFIG_REQ
+} L2CAP_SUBSTATE;
+
+#define set_l2cap_state(l2cap_state,state,l2cap_substate,substate)	\
+	((l2cap_state) = (state)),((l2cap_substate) = (substate));
+
+
 
 typedef enum frame_type {
 	IFRAME = 0x00,
@@ -662,6 +672,7 @@ struct l2cap_info {
 	L2CAP_CONNECT_INITIATE connect_initiate;
 
 	L2CAP_STATE l2cap_state;
+	L2CAP_SUBSTATE l2cap_substate;
 
 	void (*l2cap_pong_cb)(struct l2cap_info *l2cap_info,uint8_t argcnt,...);
 

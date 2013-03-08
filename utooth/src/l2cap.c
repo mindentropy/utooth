@@ -21,7 +21,7 @@ uint16_t tmp_chid = 0;
 
 struct l2cap_conn l2cap_conn_pool[L2CAP_CONN_POOL_SIZE];
 struct list_head l2cap_empty_pool;
-extern testbdaddr;
+extern bdaddr_t testbdaddr;
 
 
 uint8_t gen_l2cap_sig_id() {
@@ -171,7 +171,13 @@ void process_connection_request(
 	sprintf(tmpbuff,"chid %x\n",channelid);
 	halUsbSendStr(tmpbuff);
 
-	(data->l2cap_info).l2cap_state = WAIT_CONNECT_RSP; 
+//	(data->l2cap_info).l2cap_state = L2CAP_WAIT_CONNECT_RSP;
+
+	set_l2cap_state((data->l2cap_info).l2cap_state,
+					L2CAP_WAIT_CONNECT_RSP,
+					(data->l2cap_info).l2cap_substate,
+					L2CAP_NONE);
+
 	(data->l2cap_info).dcid = dcid;
 	(data->l2cap_info).psm_type = psm;
 
@@ -266,6 +272,7 @@ process_l2cap_pkt(uint16_t conn_handle,
 							);
 
 					halUsbSendStr("<Conn Resp\n");
+
 					l2cap_send_connection_response(
 						conn_handle,
 						get_l2cap_cmd_id(l2cap_pkt_buff),
@@ -274,19 +281,18 @@ process_l2cap_pkt(uint16_t conn_handle,
 						l2cap_pkt_buff
 						);
 						
-					
-					set_l2cap_state(
+				//TODO: Initialize conn.	
+					/*set_l2cap_state(
 							(conn->l2cap_info).l2cap_state,
-							CONFIG);
+							L2CAP_CONFIG,
+							(conn->l2cap_info).l2cap_substate,
+							L2CAP_WAIT_CONFIG);*/
+
 					l2cap_config_request(
 							get_acl_conn_handle(conn_handle),
 							scid,
 							l2cap_pkt_buff
 						);
-		
-					set_l2cap_state(
-							(conn->l2cap_info).l2cap_state,
-							WAIT_CONFIG);
 							
 					break;
 				case SIG_CONNECTION_RESPONSE:
@@ -314,9 +320,6 @@ process_l2cap_pkt(uint16_t conn_handle,
 							
 							if(conn != NULL) {
 								if((get_l2cap_cmd_conn_resp_result(l2cap_pkt_buff)) == 0) {
-										set_l2cap_state(
-													(conn->l2cap_info).l2cap_state,
-													CONFIG);
 
 										(conn->l2cap_info).dcid = 
 													get_l2cap_cmd_conn_resp_dcid(l2cap_pkt_buff);
@@ -331,23 +334,32 @@ process_l2cap_pkt(uint16_t conn_handle,
 
 										set_l2cap_state(
 													(conn->l2cap_info).l2cap_state,
-													WAIT_CONFIG);
+													L2CAP_CONFIG,
+													(conn->l2cap_info).l2cap_substate,
+													L2CAP_WAIT_CONFIG
+													);
 								}
 							}
 							halUsbSendChar('\n');
 
 							break;
 						case CONNECTION_PENDING:
-							set_l2cap_state(
+							//TODO: Initialize conn.
+							/*set_l2cap_state(
 										(conn->l2cap_info).l2cap_state,
-										WAIT_CONNECT);
+										L2CAP_WAIT_CONNECT,
+										(conn->l2cap_info).l2cap_substate,
+										L2CAP_NONE);*/
 							break;
 						case CONNECTION_REFUSED_PSM_NOT_SUPPORTED:
 						case CONNECTION_REFUSED_SECURITY_BLOCK:
 						case CONNECTION_REFUSED_NO_RESOURCES_AVAILABLE:
-							set_l2cap_state(
+							//TODO: Initialize conn.
+							/*set_l2cap_state(
 									(conn->l2cap_info).l2cap_state,
-									CLOSED);
+									L2CAP_CLOSED,
+									(conn->l2cap_info).l2cap_substate,
+									L2CAP_NONE);*/
 							break;
 					}
 
@@ -398,12 +410,25 @@ process_l2cap_pkt(uint16_t conn_handle,
 
 					//Check for the configuration options set. Based on this build the configuration response.
 					if((conn->l2cap_info).conf_opt.option_bits & MTU_OPTION_BIT) {
+					
+						set_l2cap_state((conn->l2cap_info).l2cap_state,
+										L2CAP_CONFIG,
+										(conn->l2cap_info).l2cap_substate,
+										L2CAP_WAIT_SEND_CONFIG
+										);
+
 						if((conn->l2cap_info).conf_opt.mtu != L2CAP_PAYLOAD_MTU) {
 							set_l2cap_signal_cmd_conf_resp_result(l2cap_pkt_buff,
 											FAILURE_UNACCEPTABLE_PARAMETERS);
 							set_l2cap_signal_mtu_option(tmp,L2CAP_PAYLOAD_MTU); //Set the acceptable parameter.
 							tmp += TOTAL_OPTION_LEN(MTU_OPTION_LEN); //Increase the offset by the total option len.
 							cmd_len += TOTAL_OPTION_LEN(MTU_OPTION_LEN);
+
+						/*	set_l2cap_state((data->l2cap_info).l2cap_state,
+										L2CAP_CONFIG,
+										(data->l2cap_info).l2cap_substate,
+										L2CAP_WAIT_CONFIG
+										);*/
 						}
 
 						if((conn->l2cap_info).conf_opt.option_bits & FLUSH_TIMEOUT_OPTION_BIT) {
@@ -414,6 +439,12 @@ process_l2cap_pkt(uint16_t conn_handle,
 														L2CAP_FLUSH_TIMEOUT); //Set the acceptable parameter.
 								tmp += TOTAL_OPTION_LEN(FLUSH_TIMEOUT_OPTION_LEN); //Increase the offset by the total option len.
 								cmd_len += TOTAL_OPTION_LEN(FLUSH_TIMEOUT_OPTION_LEN);
+
+					/*			set_l2cap_state((data->l2cap_info).l2cap_state,
+										L2CAP_CONFIG,
+										(data->l2cap_info).l2cap_substate,
+										L2CAP_WAIT_CONFIG
+										);*/
 							}
 						}
 					}
@@ -1344,7 +1375,11 @@ void l2cap_connect_request(bdaddr_t bdaddr,
 	add_to_pool_head(&(conn_info[index].l2cap_conn_pool),
 						data);
 	
-	set_l2cap_state((data->l2cap_info).l2cap_state,WAIT_CONNECT_RSP);
+	set_l2cap_state((data->l2cap_info).l2cap_state,
+					L2CAP_WAIT_CONNECT_RSP,
+					(data->l2cap_info).l2cap_substate,
+					L2CAP_NONE
+					);
 
 	tmp_chid = data->local_channel_id = gen_l2cap_channel_id();
 
