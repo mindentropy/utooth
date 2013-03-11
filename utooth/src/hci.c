@@ -634,25 +634,27 @@ void process_connection_complete_event() {
 }
 
 void process_num_of_completed_pkts() {
-	char /*tmpbuff[20],*/i;
+	//char /*tmpbuff[20],*/i;
 	uint8_t num_handles;
-	uint16_t tmp;
+	//uint16_t tmp;
 
 	num_handles = read8_le();
 /*	sprintf(tmpbuff,"numofhandles:%x\n",num_handles);
 	halUsbSendStr(tmpbuff);*/
 	
-	for(i = 0;i<num_handles;i++) {
-		tmp = read16_le();
+	cq_discard(&rx_q,num_handles<<1);
+/*	for(i = 0;i<num_handles;i++) {
+		tmp = read16_le();*/
 		//sprintf(tmpbuff,"handle:%x\n",read16_le());
 		//halUsbSendStr(tmpbuff);
-	}
+//	}
 	
-	for(i = 0;i<num_handles;i++) {
-		tmp = read16_le();
+	cq_discard(&rx_q,num_handles<<1);
+/*	for(i = 0;i<num_handles;i++) {
+		tmp = read16_le();*/
 	/*	sprintf(tmpbuff,"completed_packets:%x\n",read16_le());
 		halUsbSendStr(tmpbuff);*/
-	}
+//	}
 }
 
 

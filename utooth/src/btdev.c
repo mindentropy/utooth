@@ -163,12 +163,20 @@ int main(void) {
 	testbdaddr[4] = 0x11;
 	testbdaddr[5] = 0x11;*/
 
-	testbdaddr[0] = 0xb2;
+/*	testbdaddr[0] = 0xb2;
 	testbdaddr[1] = 0x29;
 	testbdaddr[2] = 0x4c;
 	testbdaddr[3] =	0x83;
 	testbdaddr[4] =	0x15;
-	testbdaddr[5] = 0x00;
+	testbdaddr[5] = 0x00;*/
+
+	
+	testbdaddr[0] = 0x43;
+	testbdaddr[1] = 0x63;
+	testbdaddr[2] = 0xec;
+	testbdaddr[3] =	0x9d;
+	testbdaddr[4] =	0x68;
+	testbdaddr[5] = 0x20;
 
 	
 //	unsigned char ch = 32;

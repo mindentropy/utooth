@@ -590,7 +590,6 @@ typedef enum {
 	((l2cap_state) = (state)),((l2cap_substate) = (substate));
 
 
-
 typedef enum frame_type {
 	IFRAME = 0x00,
 	SFRAME,
@@ -714,9 +713,9 @@ void l2cap_ping(bdaddr_t bdaddr,
 
 /* 
 	Get the l2cap connection info for the particular channel endpoint. 
-	Minimum info required for this is conn_handle. This conn_handle can
-	have multiple endpoints. Hence a channel_id is needed to identify the 
-	endpoint.
+	Minimum info required for this is conn_handle(HCI layer). This 
+	conn_handle can have multiple endpoints. Hence a channel_id is 
+	needed to identify the endpoint.
 
 	NOTE:
 	----
@@ -729,7 +728,7 @@ void l2cap_ping(bdaddr_t bdaddr,
 struct l2cap_conn * 
 get_l2cap_conn_from_channel_id(struct connection_info *conn_info,
 								uint16_t conn_handle,
-								uint16_t channel_id);
+								uint16_t local_channel_id);
 
 void l2cap_connect_request(bdaddr_t bdaddr,
 						uint8_t *l2cap_pkt_buff,
@@ -755,4 +754,11 @@ void l2cap_send_connection_response(
 void create_l2cap_bframe_rfcomm_pkt(
 				uint8_t *l2cap_pkt_buff,
 				struct l2cap_conn *conn);
+
+struct l2cap_conn * process_connection_request(
+							uint16_t conn_handle,
+							uint16_t channelid, //my channel id.
+							uint16_t dcid, //remote device channel id
+							PSM_TYPE psm
+							);
 #endif

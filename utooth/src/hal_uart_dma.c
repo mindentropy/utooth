@@ -191,7 +191,7 @@ void hal_uart_enable_rcv() {
 }
 
 inline void set_read_blk_size(uint16_t blksize) {
-	char tmpbuff[10];
+	//char tmpbuff[10];
 	readblksize  = blksize;
 	
 	/*sprintf(tmpbuff,"rbs: %u\n",blksize);

@@ -45,7 +45,7 @@ uint16_t gen_l2cap_channel_id() {
 struct l2cap_conn * get_l2cap_conn_from_channel_id(
 								struct connection_info *conn_info,
 								uint16_t conn_handle,
-								uint16_t channel_id) 
+								uint16_t local_channel_id) 
 								{
 	int conn_index = 0;
 	struct list_head *node;
@@ -61,7 +61,7 @@ struct l2cap_conn * get_l2cap_conn_from_channel_id(
 	while(node != NULL) {
 		conn = (struct l2cap_conn *)node;
 
-		if(conn->local_channel_id == channel_id)
+		if(conn->local_channel_id == local_channel_id)
 			return conn;
 		
 		node = node->next;
@@ -141,7 +141,7 @@ void process_rfcomm_data_pkt(uint16_t conn_handle,
 }
 */
 
-void process_connection_request(
+struct l2cap_conn * process_connection_request(
 							uint16_t conn_handle,
 							uint16_t channelid, //my channel id.
 							uint16_t dcid, //remote device channel id
@@ -154,12 +154,12 @@ void process_connection_request(
 	conn_index = get_index_from_connection_handle(conn_info,conn_handle);
 
 	if(conn_index == -1)
-		return;
+		return NULL;
 
 	data = remove_from_pool_head(&l2cap_empty_pool);
 
 	if(data == NULL)
-		return;
+		return NULL;
 
 
 	add_to_pool_head(&(conn_info[conn_index].l2cap_conn_pool),
@@ -170,8 +170,6 @@ void process_connection_request(
 
 	sprintf(tmpbuff,"chid %x\n",channelid);
 	halUsbSendStr(tmpbuff);
-
-//	(data->l2cap_info).l2cap_state = L2CAP_WAIT_CONNECT_RSP;
 
 	set_l2cap_state((data->l2cap_info).l2cap_state,
 					L2CAP_WAIT_CONNECT_RSP,
@@ -189,7 +187,7 @@ void process_connection_request(
 							rfcomm_state_transition);
 
 
-	return;
+	return data;
 }
 
 void 
@@ -264,13 +262,13 @@ process_l2cap_pkt(uint16_t conn_handle,
 					dcid = gen_l2cap_channel_id(); //Generate a cid for myself.
 					//tmp_chid = dcid;
 
-					process_connection_request(
+			 		conn = process_connection_request(
 							get_acl_conn_handle(conn_handle),
 							dcid,
 							scid,
 							get_l2cap_cmd_conn_req_psm(l2cap_pkt_buff)
 							);
-
+					
 					halUsbSendStr("<Conn Resp\n");
 
 					l2cap_send_connection_response(
@@ -281,12 +279,13 @@ process_l2cap_pkt(uint16_t conn_handle,
 						l2cap_pkt_buff
 						);
 						
-				//TODO: Initialize conn.	
-					/*set_l2cap_state(
+					if(conn != NULL) {
+						set_l2cap_state(
 							(conn->l2cap_info).l2cap_state,
 							L2CAP_CONFIG,
 							(conn->l2cap_info).l2cap_substate,
-							L2CAP_WAIT_CONFIG);*/
+							L2CAP_WAIT_CONFIG);
+					}
 
 					l2cap_config_request(
 							get_acl_conn_handle(conn_handle),
@@ -298,7 +297,7 @@ process_l2cap_pkt(uint16_t conn_handle,
 				case SIG_CONNECTION_RESPONSE:
 					halUsbSendStr(">Conn Resp\n");
 					
-					cmdid = get_l2cap_cmd_id(l2cap_pkt_buff);					
+					cmdid = get_l2cap_cmd_id(l2cap_pkt_buff);
 					signal_len = get_l2cap_cmd_len(l2cap_pkt_buff);
 
 					sprintf(tmpbuff,"dcid:%x,scid:%x,res:%x,stat:%x\n",
@@ -424,11 +423,11 @@ process_l2cap_pkt(uint16_t conn_handle,
 							tmp += TOTAL_OPTION_LEN(MTU_OPTION_LEN); //Increase the offset by the total option len.
 							cmd_len += TOTAL_OPTION_LEN(MTU_OPTION_LEN);
 
-						/*	set_l2cap_state((data->l2cap_info).l2cap_state,
+							set_l2cap_state((conn->l2cap_info).l2cap_state,
 										L2CAP_CONFIG,
-										(data->l2cap_info).l2cap_substate,
-										L2CAP_WAIT_CONFIG
-										);*/
+										(conn->l2cap_info).l2cap_substate,
+										L2CAP_WAIT_CONFIG_REQ_RESP
+										);
 						}
 
 						if((conn->l2cap_info).conf_opt.option_bits & FLUSH_TIMEOUT_OPTION_BIT) {
@@ -440,11 +439,11 @@ process_l2cap_pkt(uint16_t conn_handle,
 								tmp += TOTAL_OPTION_LEN(FLUSH_TIMEOUT_OPTION_LEN); //Increase the offset by the total option len.
 								cmd_len += TOTAL_OPTION_LEN(FLUSH_TIMEOUT_OPTION_LEN);
 
-					/*			set_l2cap_state((data->l2cap_info).l2cap_state,
+								set_l2cap_state((conn->l2cap_info).l2cap_state,
 										L2CAP_CONFIG,
-										(data->l2cap_info).l2cap_substate,
-										L2CAP_WAIT_CONFIG
-										);*/
+										(conn->l2cap_info).l2cap_substate,
+										L2CAP_WAIT_CONFIG_REQ_RESP
+										);
 							}
 						}
 					}
@@ -495,11 +494,29 @@ process_l2cap_pkt(uint16_t conn_handle,
 								get_l2cap_cmd_conf_resp_result(l2cap_pkt_buff));
 					halUsbSendStr(tmpbuff);
 
-					get_options(
-						l2cap_pkt_buff + L2CAP_CFRAME_CMD_CONF_RESP_CONFIG_OPT_OFFSET,
-						signal_len - CTRL_SIG_CMD_SCID_SIZE - CTRL_SIG_CMD_FLAGS_SIZE - CTRL_SIG_CMD_RESULT_SIZE,
-						&(conn->l2cap_info)
-					);
+
+					switch(get_l2cap_cmd_conf_resp_result(l2cap_pkt_buff)) {
+						case CONFIG_SUCCESS:
+							get_options(
+								(l2cap_pkt_buff + L2CAP_CFRAME_CMD_CONF_RESP_CONFIG_OPT_OFFSET),
+								(signal_len - CTRL_SIG_CMD_SCID_SIZE - CTRL_SIG_CMD_FLAGS_SIZE - CTRL_SIG_CMD_RESULT_SIZE),
+								&(conn->l2cap_info));
+
+								set_l2cap_state(
+									(conn->l2cap_info).l2cap_state,
+									L2CAP_OPEN,
+									(conn->l2cap_info).l2cap_substate,
+									L2CAP_NONE);
+
+							break;
+						case FAILURE_UNACCEPTABLE_PARAMETERS:
+							break;
+						case FAILURE_REJECTED:
+							break;
+						case FAILURE_UNKNOWN_OPTIONS:
+							break;
+					}
+					//TODO: Check for unacceptable configuration responses.
 					
 					halUsbSendChar('\n');
 					break;
@@ -1375,7 +1392,7 @@ void l2cap_connect_request(bdaddr_t bdaddr,
 	add_to_pool_head(&(conn_info[index].l2cap_conn_pool),
 						data);
 	
-	set_l2cap_state((data->l2cap_info).l2cap_state,
+set_l2cap_state((data->l2cap_info).l2cap_state,
 					L2CAP_WAIT_CONNECT_RSP,
 					(data->l2cap_info).l2cap_substate,
 					L2CAP_NONE
