@@ -103,14 +103,17 @@ void get_options(uint8_t *buff,uint8_t config_size,struct l2cap_info *l2cap_info
 										get_l2cap_param16_le(buff,CONFIG_OPTION_DATA_OFFSET));
 				halUsbSendStr(tmpbuff);
 				l2cap_info->conf_opt.option_bits |= MTU_OPTION_BIT;
-				l2cap_info->conf_opt.mtu = get_l2cap_param16_le(buff,CONFIG_OPTION_DATA_OFFSET);
+				l2cap_info->conf_opt.mtu = get_l2cap_param16_le(buff,
+									CONFIG_OPTION_DATA_OFFSET);
 				break;
 			case FLUSH_TIMEOUT_OPTION_TYPE:
-				sprintf(tmpbuff,"len:%x,fto:%u\n",get_l2cap_param8_le(buff,CONFIG_LEN_OFFSET),
-										get_l2cap_param16_le(buff,CONFIG_OPTION_DATA_OFFSET));
+				sprintf(tmpbuff,"len:%x,fto:%u\n",
+									get_l2cap_param8_le(buff,CONFIG_LEN_OFFSET),
+									get_l2cap_param16_le(buff,CONFIG_OPTION_DATA_OFFSET));
 				halUsbSendStr(tmpbuff);
 				l2cap_info->conf_opt.option_bits |= FLUSH_TIMEOUT_OPTION_BIT;
-				l2cap_info->conf_opt.flush_timeout = get_l2cap_param16_le(buff,CONFIG_OPTION_DATA_OFFSET);
+				l2cap_info->conf_opt.flush_timeout = get_l2cap_param16_le(buff,
+														CONFIG_OPTION_DATA_OFFSET);
 				break;
 			case QoS_OPTION_TYPE:
 				l2cap_info->conf_opt.option_bits |= QOS_OPTION_BIT;
@@ -287,6 +290,8 @@ process_l2cap_pkt(uint16_t conn_handle,
 							L2CAP_WAIT_CONFIG);
 					}
 
+
+					/* Send config request */
 					l2cap_config_request(
 							get_acl_conn_handle(conn_handle),
 							scid,
@@ -510,10 +515,31 @@ process_l2cap_pkt(uint16_t conn_handle,
 
 							break;
 						case FAILURE_UNACCEPTABLE_PARAMETERS:
+
+						/*
+						 * On an unacceptable parameters failure (Result=0x0001) the rejected
+						 * parameters shall be sent in the response with the values that would have
+						 * been accepted if sent in the original request. Any missing configuration
+						 * parameters are assumed to have their most recently accepted values and
+						 * they too shall be included in the Configuration Response if they need to be
+						 * changed.
+						 */
+
 							break;
 						case FAILURE_REJECTED:
 							break;
 						case FAILURE_UNKNOWN_OPTIONS:
+						/*
+						 * On an unknown option failure (Result=0x0003), the option types not under-
+						 * stood by the recipient of the Request shall be included in the Response
+						 * unless they are hints. Hints are those options in the Request that are
+						 * skipped if not understood (see Section 5 on page 55). Hints shall not be
+						 * included in the Response and shall not be the sole cause for rejecting the
+						 * Request.
+						 */
+
+							break;
+						default:
 							break;
 					}
 					//TODO: Check for unacceptable configuration responses.
@@ -521,7 +547,7 @@ process_l2cap_pkt(uint16_t conn_handle,
 					halUsbSendChar('\n');
 					break;
 				case SIG_DISCONNECTION_REQUEST:
-					halUsbSendStr("DisconnReq\n");
+					halUsbSendStr(">DisconnReq\n");
 
 					cmdid = get_l2cap_cmd_id(l2cap_pkt_buff);
 					signal_len = get_l2cap_cmd_len(l2cap_pkt_buff);
@@ -534,7 +560,7 @@ process_l2cap_pkt(uint16_t conn_handle,
 								scid = get_l2cap_cmd_disconn_req_scid(l2cap_pkt_buff));
 					halUsbSendStr(tmpbuff);
 
-					halUsbSendStr("DisconnResp\n");
+					halUsbSendStr("<DisconnResp\n");
 
 					cmd_len = CTRL_SIG_CMD_DISCONN_RESP_PAYLOAD_SIZE;
 					set_l2cap_sig_cmd_header(l2cap_pkt_buff,
@@ -556,8 +582,15 @@ process_l2cap_pkt(uint16_t conn_handle,
 									(L2CAP_HEADER_SIZE + 
 										CTRL_SIG_HEADER_SIZE + 
 										cmd_len));
+					
 
-					halUsbSendChar('\n');
+					set_l2cap_state((data->l2cap_info).l2cap_state,
+						L2CAP_CLOSED
+						(data->l2cap_info).l2cap_substate,
+						L2CAP_NONE);
+
+
+						halUsbSendChar('\n');
 
 					break;
 				case SIG_DISCONNECTION_RESPONSE:
