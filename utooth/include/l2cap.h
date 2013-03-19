@@ -623,7 +623,6 @@ typedef enum PSM {
 
 
 
-
 typedef enum {
 	L2CAP_PKT_OK = 0x00,
 	L2CAP_PKT_MISMATCH
@@ -704,7 +703,8 @@ void l2cap_init();
 void l2cap_ping(bdaddr_t bdaddr,
 				struct l2cap_info *l2cap_info,
 				uint8_t *l2cap_pkt_buff,
-				void (*l2cap_pong_cb)(struct l2cap_info *l2cap_info,uint8_t argcnt,...),
+				void (*l2cap_pong_cb)(struct l2cap_info *l2cap_info,
+						uint8_t argcnt,...),
 				uint8_t argcnt,
 				...
 				);

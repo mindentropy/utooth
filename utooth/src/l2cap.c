@@ -584,11 +584,10 @@ process_l2cap_pkt(uint16_t conn_handle,
 										cmd_len));
 					
 
-					set_l2cap_state((data->l2cap_info).l2cap_state,
-						L2CAP_CLOSED
-						(data->l2cap_info).l2cap_substate,
+					set_l2cap_state((conn->l2cap_info).l2cap_state,
+						L2CAP_CLOSED,
+						(conn->l2cap_info).l2cap_substate,
 						L2CAP_NONE);
-
 
 						halUsbSendChar('\n');
 

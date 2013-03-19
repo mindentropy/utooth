@@ -107,6 +107,7 @@ d) RFCOMM msg handling module.
    |
    +----> Formal message creation functions have to be written.
 
+
 *) RFCOMM connection state machine has to be setup.
 
 API
