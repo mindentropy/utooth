@@ -151,6 +151,8 @@ int main(void) {
 //	uint8_t row = 0, col = 0,contrast_level = 70;
 
 	WDTCTL = WDTPW | WDTHOLD;
+
+	WDTSSEL0
 	
  	/*
 		host bdaddr: B8:FF:FE:AC:C6:A2
@@ -281,7 +283,6 @@ int main(void) {
 			long_wait();
 		}
 
-		
 	}
 
 	return 0; //Make compiler happy :).
