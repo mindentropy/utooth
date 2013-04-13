@@ -193,6 +193,7 @@ struct l2cap_conn * process_connection_request(
 	return data;
 }
 
+
 void 
 process_l2cap_pkt(uint16_t conn_handle,
 				uint8_t *l2cap_pkt_buff) {
@@ -297,6 +298,12 @@ process_l2cap_pkt(uint16_t conn_handle,
 							scid,
 							l2cap_pkt_buff
 						);
+
+					set_l2cap_state(
+						(conn->l2cap_info).l2cap_state,
+						L2CAP_CONFIG,
+						(conn->l2cap_info).l2cap_substate,
+						L2CAP_WAIT_CONFIG_REQ_RESP);
 							
 					break;
 				case SIG_CONNECTION_RESPONSE:
@@ -506,7 +513,10 @@ process_l2cap_pkt(uint16_t conn_handle,
 								(l2cap_pkt_buff + L2CAP_CFRAME_CMD_CONF_RESP_CONFIG_OPT_OFFSET),
 								(signal_len - CTRL_SIG_CMD_SCID_SIZE - CTRL_SIG_CMD_FLAGS_SIZE - CTRL_SIG_CMD_RESULT_SIZE),
 								&(conn->l2cap_info));
+								
 
+								//TODO: Check if a request to me was 
+								//acceptable. If acceptable move to L2CAP_OPEN state.
 								set_l2cap_state(
 									(conn->l2cap_info).l2cap_state,
 									L2CAP_OPEN,
@@ -1480,7 +1490,9 @@ void l2cap_config_request(
 	set_l2cap_signal_cmd_code(l2cap_pkt_buff,SIG_CONFIGURATION_REQUEST);
 	set_l2cap_signal_cmd_id(l2cap_pkt_buff,gen_l2cap_sig_id());
 	set_l2cap_signal_cmd_len(l2cap_pkt_buff,
-				CTRL_SIG_CMD_CONF_REQ_PAYLOAD_SIZE + TOTAL_OPTION_LEN(MTU_OPTION_LEN));
+				CTRL_SIG_CMD_CONF_REQ_PAYLOAD_SIZE + 
+				TOTAL_OPTION_LEN(MTU_OPTION_LEN));
+
 	set_l2cap_signal_cmd_conf_req_dcid(l2cap_pkt_buff,dcid);
 	
 /* 

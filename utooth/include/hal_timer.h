@@ -2,6 +2,7 @@
 
 #define HAL_TIMER_H_
 
-
+#include <msp430.h>
+#include <stdint.h>
 
 #endif

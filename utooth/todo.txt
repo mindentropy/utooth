@@ -67,10 +67,14 @@ b) L2CAP module
 *)L2CAP ping request and response and L2CAP parsing of data --> Done!!!
 
 ---------------------------------------------------------------------------------------------------------------
-*)Length mismatch should be checked as to whether its related to segmentation and reassembly. --> HIGH PRIORITY --> Done.
-*)Modify code to handle the header size efficiently rather than step wise jumps from length etc. --> Done.
+*)Length mismatch should be checked as to whether its 
+  related to segmentation and reassembly. --> HIGH PRIORITY --> Done.
+*)Modify code to handle the header size efficiently rather 
+than step wise jumps from length etc. --> Done.
 
-Detection of fragmented l2cap packet. Check if the l2cap pkt len is different from acl pkt len. Indicates fragmentation. -->Done.
+Detection of fragmented l2cap packet. Check if the l2cap pkt len is different from acl pkt len. 
+Indicates fragmentation. -->Done.
+
 Detect if the packet boundary flags are 10 and then 01 which indicates the packet continuation. --> Done.
 
 Modify process_l2cap_pkt to handle fragmentation. Fragmentation buffer handling --> HIGH PRIORITY. -->Done.

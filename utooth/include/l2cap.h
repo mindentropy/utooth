@@ -593,7 +593,7 @@ typedef enum {
 typedef enum frame_type {
 	IFRAME = 0x00,
 	SFRAME,
-}FRAME_TYPE;
+} FRAME_TYPE;
 
 
 typedef enum connect_initiate {

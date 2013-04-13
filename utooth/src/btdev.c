@@ -185,7 +185,7 @@ int main(void) {
 	
 	halBoardInit();
 	halBoardStartXT1();
-	halBoardSetSystemClock(SYSCLK_16MHZ);
+	halBoardSetSystemClock(SYSCLK_16MHZ); //Set to 16Mhz.
 
 	/* Enable UART */
 	halUsbInit();
