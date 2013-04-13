@@ -152,7 +152,6 @@ int main(void) {
 
 	WDTCTL = WDTPW | WDTHOLD;
 
-	WDTSSEL0
 	
  	/*
 		host bdaddr: B8:FF:FE:AC:C6:A2

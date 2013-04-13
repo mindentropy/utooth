@@ -1001,7 +1001,7 @@ process_l2cap_pkt(uint16_t conn_handle,
 										* vation.
 										*/
 										
-										if(get_rfcomm_msg_credit_conf_pkt(tmp) == 0xE) {
+										if(get_rfcomm_msg_credit_conf_pkt(tmp) == PN_CREDIT_SUPPORT_ACK) {
 
 
 											halUsbSendStr("<MSC cmd\n");
@@ -1222,9 +1222,6 @@ process_l2cap_pkt(uint16_t conn_handle,
 										if(get_rfcomm_msg_type_cr(tmp) == MSG_RESP) {
 											halUsbSendStr(">RPN Resp\n");
 											
-
-											
-
 											}
 											
 											return;
