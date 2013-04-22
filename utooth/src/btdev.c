@@ -11,7 +11,7 @@
 #include "hci.h"
 #include "cq.h"
 #include "hci_cmds.h"
-//#include "hal_timer.h"
+#include "hal_timer.h"
 #include "l2cap.h"
 
 
@@ -209,6 +209,7 @@ int main(void) {
 	hal_uart_dma_init();
 	__delay_cycles(50000);
 
+	init_timer_A0();
 	//halTimerInit();
 //	hal_uart_enable_rcv();
 
@@ -238,7 +239,6 @@ int main(void) {
 
 
 	for(;;) {
-		blink_led1();
 		
 		if(!(halButtonsPressed() & BUTTON_S1)) {
 			halUsbSendStr("Create connection\n");
