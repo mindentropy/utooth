@@ -1,0 +1,1 @@
+The aim of the project is to create a bluetooth stack for microcontrollers with PAN1323 ETU bluetooth module. The project is purely academic to further the understanding of bluetooth protocols and experimentation of various layers.
